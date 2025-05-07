@@ -166,29 +166,18 @@ def load_bias_instructions(fet_type="NMOS", input_json_path = 'sweep_bias_instru
         return (None, None, None)
 
     # Extract relevant sections
-    transfer_char_set1 = processed_data.get(fet_type, {}).get('Primary sweep: Vgs Set 1', {})
-    transfer_char_set2 = processed_data.get(fet_type, {}).get('Primary sweep: Vgs Set 2', {})
+    transfer_char_set1 = processed_data.get(fet_type, {}).get('Primary sweep: Vgs', {})
     transfer_char = processed_data.get(fet_type, {}).get('Primary sweep: Vds', {})
 
-    transfer_char_set1_vsource_sub = transfer_char_set1.get("Vsource_sub", [])
-    transfer_char_set1_vbulk_sourc = transfer_char_set1.get("Vbulk_source", [])
-    transfer_char_set1_vdrain_source = transfer_char_set1.get("Vdrain_source", [])
-    transfer_char_set1_vgate_source = transfer_char_set1.get("Vgate_source", [])
+    transfer_char_set1_vdrain_source = transfer_char_set1.get("Vd", [])
+    transfer_char_set1_vgate_source = transfer_char_set1.get("Vg", [])
 
-    transfer_char_set2_vsource_sub = transfer_char_set2.get("Vsource_sub", [])
-    transfer_char_set2_vbulk_sourc = transfer_char_set2.get("Vbulk_source", [])
-    transfer_char_set2_vdrain_source = transfer_char_set2.get("Vdrain_source", [])
-    transfer_char_set2_vgate_source = transfer_char_set2.get("Vgate_source", [])
-
-    transfer_char_vsource_sub = transfer_char.get("Vsource_sub", [])
-    transfer_char_vbulk_sourc = transfer_char.get("Vbulk_source", [])
-    transfer_char_vdrain_source = transfer_char.get("Vdrain_source", [])
-    transfer_char_vgate_source = transfer_char.get("Vgate_source", [])
+    transfer_char_vdrain_source = transfer_char.get("Vd", [])
+    transfer_char_vgate_source = transfer_char.get("Vg", [])
 
     return (
-        (transfer_char_set1_vsource_sub, transfer_char_set1_vbulk_sourc, transfer_char_set1_vdrain_source, transfer_char_set1_vgate_source),
-        (transfer_char_set2_vsource_sub, transfer_char_set2_vbulk_sourc, transfer_char_set2_vdrain_source, transfer_char_set2_vgate_source),
-        (transfer_char_vsource_sub, transfer_char_vbulk_sourc, transfer_char_vdrain_source, transfer_char_vgate_source)
+        (transfer_char_set1_vdrain_source, transfer_char_set1_vgate_source),
+        (transfer_char_vdrain_source, transfer_char_vgate_source)
     )
 
 def configure_instr(sourcing_voltage,
@@ -398,12 +387,9 @@ def voltage_sweep_three_instruments(
             Vg_src = 0
 
 
-
-        # Append the measurement tuple (now 15 columns)
         data.append((
             Vd_src, Vg_src,   # Source voltages
-            d_i, g_i,  # Measured currents
-            d_v, g_v  # Measured voltages
+            d_i, g_i  # Measured currents
         ))
 
         # --- Update live plots (if enabled) ---
@@ -442,8 +428,7 @@ def voltage_sweep_three_instruments(
 #                                              MAIN MEASUREMENT SCRIPT
 # -----------------------------------------------------------------------------------------------------------------------
 
-data_folder = 'Data/250K0_high_Vds_test2'
-mux_json_file = "mux_instructions_by_transistor_4wire_drain.json"
+data_folder = 'Data/roomtemp_initial_test'
 bias_json_file = "sweep_bias_instructions_v3.json"
 live_plotting = True
 disable_front_panel = False
@@ -459,7 +444,6 @@ print("Available VISA resources:", rm.list_resources())
 
 drain_source_instrum_address = 'GPIB0::15::INSTR'
 gate_source_instrum_address = 'GPIB0::11::INSTR'
-
 
 drain_source_instrum = rm.open_resource(drain_source_instrum_address, read_termination='\r', write_termination='\r')
 gate_source_instrum = rm.open_resource(gate_source_instrum_address, read_termination='\r', write_termination='\r')
@@ -485,17 +469,12 @@ configure_instr(0,
                 disable_front_panel=disable_front_panel)
 
 
-transistor_key='nmos25_FET3' #just to test smu basic language
+transistor_key='nmos_FET_test1' #give it a name for the data saving folder. needs to have nmos or pmos in name
 
 
 print(f"\nConfiguring transistor: {transistor_key}")
 
-flavor = None
-if '25' in transistor_key:
-    flavor = 'HV'
-else:
-    print('Please configure for MV and LV as needed.')
-
+flavor = 'LV'
 
 if 'pmos' in transistor_key:
     fet_type = "PMOS"
@@ -509,147 +488,127 @@ os.makedirs(data_folder, exist_ok=True)
 os.makedirs(f'{data_folder}/{flavor}', exist_ok=True)
 
 bias_instructions = load_bias_instructions(fet_type, bias_json_file)
-
-try:
-    flavor_index = {"LV": 0, "MV": 1, "HV": 2}[flavor]
-except KeyError:
-    print("Invalid flavor, expected 'LV', 'MV', or 'HV'.")
+flavor_index = {"LV": 0}[flavor]
 
 
 # Extract relevant bias sets
-gate_source_voltages_transfer_char_s1 = bias_instructions[0][3][flavor_index]
-drain_source_voltages_transfer_char_s1 = bias_instructions[0][2][flavor_index]
+gate_source_voltages_transfer_char = bias_instructions[0][1][flavor_index]
+drain_source_voltages_transfer_char = bias_instructions[0][0][flavor_index]
 
-gate_source_voltages_transfer_char_s2 = bias_instructions[1][3][flavor_index]
-drain_source_voltages_transfer_char_s2 = bias_instructions[1][2][flavor_index]
-
-drain_source_voltages_output_char = bias_instructions[2][2][flavor_index]
-gate_source_voltages_output_char = bias_instructions[2][3][flavor_index]
+drain_source_voltages_output_char = bias_instructions[1][0][flavor_index]
+gate_source_voltages_output_char = bias_instructions[1][1][flavor_index]
 
 start_time = time.time()
 os.makedirs(f'{data_folder}/{flavor}/{transistor_key}', exist_ok=True)
 
-# Configure the voltages for the source to substrate
-if 'pmos' in transistor_key:
-    source_substrate_voltage_default = 25
-elif 'nmos' in transistor_key:
-    source_substrate_voltage_default = 0
-else:
-    print('pmos or nmos is not in transistor_key. Please update instructions to include this information')
+##################################   Transfer Char (Set 1)   #############################
+for drain_source_voltage in drain_source_voltages_transfer_char:
+    transfer_char_data = voltage_sweep_three_instruments(
+        fixed='Vd',
+        variable='Vg',
+        sweep_voltages=gate_source_voltages_transfer_char,
+        fixed_voltage=drain_source_voltage,
+        drain_source_instr=drain_source_instrum,
+        gate_source_instr=gate_source_instrum,
+        live_plot=live_plotting,
+        curr_compliance=curr_compliance,
+        drain_curr_range=drain_curr_range,
+        settle_delay=settle_delay
+    )
+    drain_source_voltage_str = str(drain_source_voltage).replace('.', 'p')
 
+    # Define the CSV file path
+    csv_filename = f'idvg_Vd{drain_source_voltage_str}.csv'
+    csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
 
-##################################   Transfer Char (Set 2)   #############################
-for drain_source_voltage in drain_source_voltages_transfer_char_s2:
-    if abs(drain_source_voltage) == 0.1 or abs(drain_source_voltage) == 25:
-        transfer_char_data = voltage_sweep_three_instruments(
-            fixed='Vd',
-            variable='Vg',
-            sweep_voltages=gate_source_voltages_transfer_char_s2,
-            fixed_voltage=drain_source_voltage,
-            drain_source_instr=drain_source_instrum,
-            gate_source_instr=gate_source_instrum,
-            live_plot=live_plotting,
-            curr_compliance=curr_compliance,
-            drain_curr_range=drain_curr_range,
-            settle_delay=settle_delay
-        )
-        drain_source_voltage_str = str(drain_source_voltage).replace('.', 'p')
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+    # Extract relevant columns
+    Vd_src = [row[0] for row in transfer_char_data]
+    Vg_src = [row[1] for row in transfer_char_data]
+    Id = [row[4] for row in transfer_char_data]
 
-        # Define the CSV file path
-        csv_filename = f'idvg_Vd{drain_source_voltage_str}.csv'
-        csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
+    # Open the CSV file for writing
+    with open(csv_path, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
 
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-        # Extract relevant columns
-        Vd_src = [row[0] for row in transfer_char_data]
-        Vg_src = [row[1] for row in transfer_char_data]
-        Id = [row[4] for row in transfer_char_data]
+        # Write the constant voltage section
+        writer.writerow(['#Constant Voltage'])
+        writer.writerow(['VD', Vd_src[0]])  # First value of Vd_src
+        writer.writerow(['VS', '0'])  # VS set to 0
 
-        # Open the CSV file for writing
-        with open(csv_path, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
+        # Write the data header
+        writer.writerow(['#Data'])
+        writer.writerow(['VG', 'ID'])
 
-            # Write the constant voltage section
-            writer.writerow(['#Constant Voltage'])
-            writer.writerow(['VD', Vd_src[0]])  # First value of Vd_src
-            writer.writerow(['VS', '0'])  # VS set to 0
+        # Write the data rows
+        for vg, id_val in zip(Vg_src, Id):
+            writer.writerow([vg, id_val])
 
-            # Write the data header
-            writer.writerow(['#Data'])
-            writer.writerow(['VG', 'ID'])
-
-            # Write the data rows
-            for vg, id_val in zip(Vg_src, Id):
-                writer.writerow([vg, id_val])
-
-        # Now saving 9 columns: (Vd_src, Vg_src, body_source_voltage_src, Id, Ib, Ig, Vd_meas, body_source_voltage_meas, Vg_meas)
-        np.savetxt(
-            f'{data_folder}/{flavor}/{transistor_key}/idvg_Vd{drain_source_voltage_str}.csv',
-            transfer_char_data,
-            delimiter=',',
-            header='Vd_src, Vg_src, Id, Ig, Vd_meas, Vg_meas,TempA,TempB,Elapsed_time',
-            comments=''
-        )
-        set_voltage(0, drain_source_instrum) #letting transistor cool btwn measurements
-        set_voltage(0, gate_source_instrum)
-        time.sleep(60)
+    np.savetxt(
+        f'{data_folder}/{flavor}/{transistor_key}/idvg_Vd{drain_source_voltage_str}.csv',
+        transfer_char_data,
+        delimiter=',',
+        header='Vd_src, Vg_src, Id, Ig',
+        comments=''
+    )
+    set_voltage(0, drain_source_instrum) #letting transistor cool btwn measurements
+    set_voltage(0, gate_source_instrum)
+    time.sleep(10)
 
 #################################### Output Characteristics #######################################
 for gate_source_voltage in gate_source_voltages_output_char:
-    if abs(gate_source_voltage)>20.5:
-        output_char_data = voltage_sweep_three_instruments(
-            fixed='Vg',
-            variable='Vd',
-            sweep_voltages=drain_source_voltages_output_char,
-            fixed_voltage=gate_source_voltage,
-            drain_source_instr=drain_source_instrum,
-            gate_source_instr=gate_source_instrum,
-            live_plot=live_plotting,
-            curr_compliance=curr_compliance,
-            drain_curr_range=drain_curr_range,
-            settle_delay=settle_delay
-        )
+    output_char_data = voltage_sweep_three_instruments(
+        fixed='Vg',
+        variable='Vd',
+        sweep_voltages=drain_source_voltages_output_char,
+        fixed_voltage=gate_source_voltage,
+        drain_source_instr=drain_source_instrum,
+        gate_source_instr=gate_source_instrum,
+        live_plot=live_plotting,
+        curr_compliance=curr_compliance,
+        drain_curr_range=drain_curr_range,
+        settle_delay=settle_delay
+    )
 
-        gate_source_voltage_str = str(gate_source_voltage).replace('.', 'p')
+    gate_source_voltage_str = str(gate_source_voltage).replace('.', 'p')
 
-        # Define the CSV file path
-        csv_filename = f'idvd_Vg{gate_source_voltage_str}.csv'
-        csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
+    # Define the CSV file path
+    csv_filename = f'idvd_Vg{gate_source_voltage_str}.csv'
+    csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
 
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-        # Extract relevant columns
-        Vd_src = [row[0] for row in output_char_data]
-        Vg_src = [row[1] for row in output_char_data]
-        Id = [row[4] for row in output_char_data]
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+    # Extract relevant columns
+    Vd_src = [row[0] for row in output_char_data]
+    Vg_src = [row[1] for row in output_char_data]
+    Id = [row[4] for row in output_char_data]
 
-        # Open the CSV file for writing
-        with open(csv_path, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
+    # Open the CSV file for writing
+    with open(csv_path, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
 
-            # Write the constant voltage section
-            writer.writerow(['#Constant Voltage'])
-            writer.writerow(['VG', Vg_src[0]])  # First value of Vd_src
-            writer.writerow(['VS', '0'])  # VS set to 0
+        # Write the constant voltage section
+        writer.writerow(['#Constant Voltage'])
+        writer.writerow(['VG', Vg_src[0]])  # First value of Vd_src
+        writer.writerow(['VS', '0'])  # VS set to 0
 
-            # Write the data header
-            writer.writerow(['#Data'])
-            writer.writerow(['VD', 'ID'])
+        # Write the data header
+        writer.writerow(['#Data'])
+        writer.writerow(['VD', 'ID'])
 
-            # Write the data rows
-            for vd, id_val in zip(Vd_src, Id):
-                writer.writerow([vd, id_val])
+        # Write the data rows
+        for vd, id_val in zip(Vd_src, Id):
+            writer.writerow([vd, id_val])
 
-        # Saving 9 columns again
-        np.savetxt(
-            f'{data_folder}/{flavor}/{transistor_key}/idvd_Vg{gate_source_voltage_str}.csv',
-            output_char_data,
-            delimiter=',',
-            header='Vd_src, Vg_src, Id, Ig, Vd_meas, Vg_meas,TempA,'
-                   'TempB,Elapsed_time',
-            comments=''
-        )
+    # Saving 4 columns again
+    np.savetxt(
+        f'{data_folder}/{flavor}/{transistor_key}/idvd_Vg{gate_source_voltage_str}.csv',
+        output_char_data,
+        delimiter=',',
+        header='Vd_src, Vg_src, Id, Ig',
+        comments=''
+    )
 
 
 

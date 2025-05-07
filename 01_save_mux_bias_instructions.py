@@ -187,7 +187,7 @@ def save_processed_bias_data_to_json(processed_data, output_file):
 
 
 # 1. Extract raw bias data from an Excel file.
-excel_bias_file = "28nm_test_biases_v3.xlsx"
+excel_bias_file = "test_biases.xlsx"
 raw_data = extract_bias_data_from_excel(excel_bias_file)
 
 # 2. Process the extracted bias data to convert strings to numeric lists.
