@@ -272,7 +272,7 @@ def measure_iv(instr, ascii_command_flavor='SCPI'):
             voltage = float(data[0])
             current = float(data[1])
             return (voltage, current)
-        elif ascii_command_flavor.lower() == 'non-scpi':
+        elif ascii_command_flavor == 'non-SCPI':
             commands = "O1X;G4,2,0X;H0X;"
             instr.write(commands)
             response = instr.query("X")
@@ -290,7 +290,7 @@ def measure_current(instr, ascii_command_flavor='SCPI'):
         if ascii_command_flavor.upper() == 'SCPI':
             response = instr.query(":READ?")
             current = float(response.strip().split(',')[1])
-        elif ascii_command_flavor.lower() == 'non-scpi':
+        elif ascii_command_flavor == 'non-SCPI':
             commands = "O1X;G4,2,0X;H0X;"
             instr.write(commands)
             response = instr.query("X")
@@ -337,7 +337,7 @@ def voltage_sweep_three_instruments(
         plt.ion()  # interactive mode
         # Create a figure with 5 rows; rows 0-3 are for currents/voltages and row 4 is for temperature.
         fig_all = plt.figure(figsize=(10, 10))
-        gs = gridspec.GridSpec(3, 2, height_ratios=[1, 1, 1, 1, 1])
+        gs = gridspec.GridSpec(3, 2, height_ratios=[1, 1, 1])
         # Rows for currents and voltages:
         ax0_left = fig_all.add_subplot(gs[0, 0])
         ax0_right = fig_all.add_subplot(gs[0, 1])
@@ -345,7 +345,7 @@ def voltage_sweep_three_instruments(
         ax1_right = fig_all.add_subplot(gs[1, 1])
 
         # Temperature subplot (spanning both columns):
-        ax_temp = fig_all.add_subplot(gs[4, :])
+        ax_temp = fig_all.add_subplot(gs[2, :])
 
         # Set labels for current plots (left column)
         ax0_left.set_ylabel("Drain I (A)")
@@ -383,12 +383,8 @@ def voltage_sweep_three_instruments(
     data = []
     plotting_voltages = []  # x-axis for the sweep
     plotting_drain_source_currents = []
-    plotting_bulk_source_currents = []
-    plotting_source_sub_currents = []
     plotting_gate_source_currents = []
     plotting_drain_source_voltages = []
-    plotting_bulk_source_voltages = []
-    plotting_source_sub_voltages = []
     plotting_gate_source_voltages = []
     # For temperature (if measured):
     plotting_time = []
@@ -397,35 +393,31 @@ def voltage_sweep_three_instruments(
 
     # Set the "fixed" node:
     if fixed == 'Vd':
-        set_voltage(fixed_voltage, drain_source_instr, ascii_command_flavor='SCPI')
+        set_voltage(fixed_voltage, drain_source_instr, ascii_command_flavor='non-SCPI')
     elif fixed == 'Vg':
-        set_voltage(fixed_voltage, gate_source_instr, ascii_command_flavor='SCPI')
+        set_voltage(fixed_voltage, gate_source_instr, ascii_command_flavor='non-SCPI')
     else:
         print("Warning: 'fixed' should be 'Vd' or 'Vg' in this example code.")
 
     # Initialize the "variable" node to 0 V:
     if variable == 'Vd':
-        set_voltage(0, drain_source_instr, ascii_command_flavor='SCPI')
+        set_voltage(0, drain_source_instr, ascii_command_flavor='non-SCPI')
     elif variable == 'Vg':
-        set_voltage(0, gate_source_instr, ascii_command_flavor='SCPI')
+        set_voltage(0, gate_source_instr, ascii_command_flavor='non-SCPI')
     else:
         print("Warning: 'variable' should be 'Vd' or 'Vg' in this example code.")
 
-    range_flip_voltage_done = False
-    range_flip_current_done = False
-    last_curr_val=0
     for v_value in sweep_voltages:
         # Update the "variable" voltage:
         if variable == 'Vd':
-            drain_source_instr.write(f":SOUR:VOLT:LEV {v_value}")
+            set_voltage(v_value, drain_source_instr, ascii_command_flavor='non-SCPI')
         else:  # variable == 'Vg'
-            gate_source_instr.write(f":SOUR:VOLT:LEV {v_value}")
-
+            set_voltage(v_value, gate_source_instr, ascii_command_flavor='non-SCPI')
         time.sleep(settle_delay)
 
         # Measure currents and voltages:
-        d_v, d_i = measure_iv(drain_source_instr, ascii_command_flavor='SCPI')
-        g_v, g_i = measure_iv(gate_source_instr, ascii_command_flavor='SCPI')
+        d_v, d_i = measure_iv(drain_source_instr, ascii_command_flavor='non-SCPI')
+        g_v, g_i = measure_iv(gate_source_instr, ascii_command_flavor='non-SCPI')
 
         # Re-map fixed/variable source voltages:
         if fixed == 'Vd' and variable == 'Vg':
@@ -491,8 +483,8 @@ def voltage_sweep_three_instruments(
             fig_all.canvas.flush_events()
 
     # Return SMU outputs to 0 V:
-    set_voltage(0, drain_source_instr, ascii_command_flavor='SCPI')
-    set_voltage(0, gate_source_instr, ascii_command_flavor='SCPI')
+    set_voltage(0, drain_source_instr, ascii_command_flavor='non-SCPI')
+    set_voltage(0, gate_source_instr, ascii_command_flavor='non-SCPI')
     time.sleep(0.01)
     if live_plot:
         plt.close(fig_all)
@@ -590,8 +582,8 @@ rm = pyvisa.ResourceManager()
 
 print("Available VISA resources:", rm.list_resources())
 
-drain_source_instrum_address = 'GPIB1::24::INSTR'
-gate_source_instrum_address = 'GPIB1::25::INSTR'
+drain_source_instrum_address = 'GPIB0::15::INSTR'
+gate_source_instrum_address = 'GPIB0::11::INSTR'
 
 
 drain_source_instrum = rm.open_resource(drain_source_instrum_address, read_termination='\r', write_termination='\r')
