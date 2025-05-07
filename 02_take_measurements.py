@@ -526,7 +526,7 @@ for drain_source_voltage in drain_source_voltages_transfer_char:
     # Extract relevant columns
     Vd_src = [row[0] for row in transfer_char_data]
     Vg_src = [row[1] for row in transfer_char_data]
-    Id = [row[4] for row in transfer_char_data]
+    Id = [row[2] for row in transfer_char_data]
 
     # Open the CSV file for writing
     with open(csv_path, 'w', newline='') as csvfile:
@@ -552,9 +552,9 @@ for drain_source_voltage in drain_source_voltages_transfer_char:
         header='Vd_src, Vg_src, Id, Ig',
         comments=''
     )
-    set_voltage(0, drain_source_instrum) #letting transistor cool btwn measurements
-    set_voltage(0, gate_source_instrum)
-    time.sleep(10)
+    set_voltage(0, drain_source_instrum, ascii_command_flavor = 'non-SCPI') #letting transistor cool btwn measurements
+    set_voltage(0, gate_source_instrum, ascii_command_flavor = 'non-SCPI')
+    time.sleep(1)
 
 #################################### Output Characteristics #######################################
 for gate_source_voltage in gate_source_voltages_output_char:
@@ -582,7 +582,7 @@ for gate_source_voltage in gate_source_voltages_output_char:
     # Extract relevant columns
     Vd_src = [row[0] for row in output_char_data]
     Vg_src = [row[1] for row in output_char_data]
-    Id = [row[4] for row in output_char_data]
+    Id = [row[2] for row in output_char_data]
 
     # Open the CSV file for writing
     with open(csv_path, 'w', newline='') as csvfile:
@@ -613,8 +613,8 @@ for gate_source_voltage in gate_source_voltages_output_char:
 
 
 #be sure all voltages are set to zero
-set_voltage(0, gate_source_instrum)
-set_voltage(0, drain_source_instrum)
+set_voltage(0, gate_source_instrum, ascii_command_flavor = 'non-SCPI')
+set_voltage(0, drain_source_instrum, ascii_command_flavor = 'non-SCPI')
 
 end_time = time.time()
 elapsed_time = end_time - start_time
