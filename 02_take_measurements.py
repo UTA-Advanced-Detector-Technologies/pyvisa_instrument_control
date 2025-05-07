@@ -191,15 +191,6 @@ def load_bias_instructions(fet_type="NMOS", input_json_path = 'sweep_bias_instru
         (transfer_char_vsource_sub, transfer_char_vbulk_sourc, transfer_char_vdrain_source, transfer_char_vgate_source)
     )
 
-
-def read_temperature(lakeshore, channel='A'):
-    """
-    Query the Lakeshore controller for the temperature on the specified channel.
-    """
-    response = lakeshore.query(f'KRDG? {channel}')
-    return float(response.strip())
-
-
 def configure_instr(sourcing_voltage,
                     instr,
                     current_compliance=0.105,
@@ -321,13 +312,10 @@ def voltage_sweep_three_instruments(
         live_plot=True,
         drain_curr_range=0.01,
         settle_delay=0.05,
-        lakeshore=None,  # <-- new parameter for temperature instrument
-        start_global=None  # <-- new parameter: reference time (e.g., time.time() before sweep)
 ):
     """
     Sweeps the 'variable' voltage while holding the other nodes constant.
-    Now in addition to measuring currents and voltages, if a Lakeshore instrument and start_global
-    time are provided, it also reads temperature (from channels A and B) and records elapsed time.
+    Now in addition to measuring currents and voltages
 
     The returned data tuple now contains 15 elements:
       (Vd_src, Vg_src, Vb_src, Vsub_src, Id, Ib, Isub, Ig, Vd_meas, Vb_meas, Vsub_meas, Vg_meas, TempA, TempB, Elapsed_time)
@@ -337,27 +325,23 @@ def voltage_sweep_three_instruments(
         plt.ion()  # interactive mode
         # Create a figure with 5 rows; rows 0-3 are for currents/voltages and row 4 is for temperature.
         fig_all = plt.figure(figsize=(10, 10))
-        gs = gridspec.GridSpec(3, 2, height_ratios=[1, 1, 1])
+        gs = gridspec.GridSpec(2, 2, height_ratios=[1, 1])
         # Rows for currents and voltages:
         ax0_left = fig_all.add_subplot(gs[0, 0])
         ax0_right = fig_all.add_subplot(gs[0, 1])
         ax1_left = fig_all.add_subplot(gs[1, 0])
         ax1_right = fig_all.add_subplot(gs[1, 1])
 
-        # Temperature subplot (spanning both columns):
-        ax_temp = fig_all.add_subplot(gs[2, :])
 
         # Set labels for current plots (left column)
         ax0_left.set_ylabel("Drain I (A)")
         ax1_left.set_ylabel("Gate I (A)")
         ax1_left.set_xlabel(f"{variable} (V)")
+
         # Set labels for voltage plots (right column)
         ax0_right.set_ylabel("Drain V (V)")
         ax1_right.set_ylabel("Gate V (V)")
         ax1_right.set_xlabel(f"{variable} (V)")
-        # Temperature plot labels
-        ax_temp.set_xlabel("Time (s)")
-        ax_temp.set_ylabel("Temperature (K)")
 
         # Create line objects:
         line_drain_source_i, = ax0_left.plot([], [], 'b-o', markersize=4, label='Drain Current')
@@ -365,11 +349,6 @@ def voltage_sweep_three_instruments(
 
         line_drain_source_v, = ax0_right.plot([], [], 'b-o', markersize=4, label='Drain Voltage')
         line_gate_source_v, = ax1_right.plot([], [], 'g-o', markersize=4, label='Gate Voltage')
-
-        # Temperature lines (for two channels)
-        line_tempA, = ax_temp.plot([], [], 'm-', label='Temperature A')
-        line_tempB, = ax_temp.plot([], [], 'c-', label='Temperature B')
-        ax_temp.legend(loc='best')
 
         fig_all.suptitle(
             f"{variable} Sweep with Fixed {fixed} = {fixed_voltage} V "
@@ -386,10 +365,6 @@ def voltage_sweep_three_instruments(
     plotting_gate_source_currents = []
     plotting_drain_source_voltages = []
     plotting_gate_source_voltages = []
-    # For temperature (if measured):
-    plotting_time = []
-    plotting_tempA = []
-    plotting_tempB = []
 
     # Set the "fixed" node:
     if fixed == 'Vd':
@@ -430,24 +405,13 @@ def voltage_sweep_three_instruments(
             Vd_src = 0
             Vg_src = 0
 
-        # --- Measure temperature (if a Lakeshore and start time are provided) ---
-        if lakeshore is not None and start_global is not None:
-            try:
-                tempA = read_temperature(lakeshore, channel='A')
-                tempB = read_temperature(lakeshore, channel='B')
-                elapsed_time = time.time() - start_global
-            except Exception as e:
-                print("Temperature measurement error:", e)
-                tempA, tempB, elapsed_time = None, None, None
-        else:
-            tempA, tempB, elapsed_time = None, None, None
+
 
         # Append the measurement tuple (now 15 columns)
         data.append((
             Vd_src, Vg_src,   # Source voltages
             d_i, g_i,  # Measured currents
-            d_v, g_v,  # Measured voltages
-            tempA, tempB, elapsed_time  # Temperature channels and elapsed time
+            d_v, g_v  # Measured voltages
         ))
 
         # --- Update live plots (if enabled) ---
@@ -463,16 +427,6 @@ def voltage_sweep_three_instruments(
             line_gate_source_i.set_data(plotting_voltages, plotting_gate_source_currents)
             line_drain_source_v.set_data(plotting_voltages, plotting_drain_source_voltages)
             line_gate_source_v.set_data(plotting_voltages, plotting_gate_source_voltages)
-
-            # Update temperature arrays if available:
-            if elapsed_time is not None:
-                plotting_time.append(elapsed_time)
-                plotting_tempA.append(tempA)
-                plotting_tempB.append(tempB)
-                line_tempA.set_data(plotting_time, plotting_tempA)
-                line_tempB.set_data(plotting_time, plotting_tempB)
-                ax_temp.relim()
-                ax_temp.autoscale_view()
 
             # Rescale current and voltage axes:
             for ax in [ax0_left, ax1_left, ax0_right, ax1_right]:
@@ -520,11 +474,6 @@ gate_source_instrum = rm.open_resource(gate_source_instrum_address, read_termina
 
 gate_source_instrum.timeout = 50000
 drain_source_instrum.timeout = 50000
-
-# # Open a Lakeshore instrument (for temperature)
-# lakeshore_addr = 'GPIB0::12::INSTR'
-# lakeshore = rm.open_resource(lakeshore_addr)
-# lakeshore.timeout = 50000
 
 configure_instr(0,
                 drain_source_instrum,
@@ -610,9 +559,7 @@ for drain_source_voltage in drain_source_voltages_transfer_char_s2:
             live_plot=live_plotting,
             curr_compliance=curr_compliance,
             drain_curr_range=drain_curr_range,
-            settle_delay=settle_delay,
-            #lakeshore=lakeshore,
-            start_global=start_time
+            settle_delay=settle_delay
         )
         drain_source_voltage_str = str(drain_source_voltage).replace('.', 'p')
 
@@ -669,9 +616,7 @@ for gate_source_voltage in gate_source_voltages_output_char:
             live_plot=live_plotting,
             curr_compliance=curr_compliance,
             drain_curr_range=drain_curr_range,
-            settle_delay=settle_delay,
-            #lakeshore=lakeshore,
-            start_global=start_time
+            settle_delay=settle_delay
         )
 
         gate_source_voltage_str = str(gate_source_voltage).replace('.', 'p')

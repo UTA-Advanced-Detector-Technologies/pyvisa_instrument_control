@@ -16,7 +16,6 @@ gate_source_instrum = rm.open_resource(gate_source_instrum_address, read_termina
 gate_source_instrum.timeout = 5000
 drain_source_instrum.timeout = 5000
 
-#------------------------
 # ---------------------------------------------------------
 # 1) Reset and set all SMUs to 0 V, then turn outputs OFF.
 #---------------------------------------------------------------------------------
@@ -25,7 +24,6 @@ drain_source_instrum.timeout = 5000
 for instr in [drain_source_instrum, gate_source_instrum]:
     instr.write(f'B0,0,0X')     # Set source to 0 V
     instr.write("N0X")       # Turn output off
-
 
 print("\nAll SMU voltages set to 0 V, outputs turned off.")
 print("All MUX channels opened (disconnected).")
