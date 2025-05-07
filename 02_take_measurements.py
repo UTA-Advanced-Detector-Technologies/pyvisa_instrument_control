@@ -315,12 +315,8 @@ def voltage_sweep_three_instruments(
         variable,
         sweep_voltages,
         fixed_voltage,
-        bulk_source_voltage,
-        source_substrate_voltage,
         drain_source_instr,
         gate_source_instr,
-        bulk_source_instr,
-        source_sub_instrum,
         curr_compliance=0.01,
         live_plot=True,
         drain_curr_range=0.01,
@@ -341,45 +337,34 @@ def voltage_sweep_three_instruments(
         plt.ion()  # interactive mode
         # Create a figure with 5 rows; rows 0-3 are for currents/voltages and row 4 is for temperature.
         fig_all = plt.figure(figsize=(10, 10))
-        gs = gridspec.GridSpec(5, 2, height_ratios=[1, 1, 1, 1, 1])
+        gs = gridspec.GridSpec(3, 2, height_ratios=[1, 1, 1, 1, 1])
         # Rows for currents and voltages:
         ax0_left = fig_all.add_subplot(gs[0, 0])
         ax0_right = fig_all.add_subplot(gs[0, 1])
         ax1_left = fig_all.add_subplot(gs[1, 0])
         ax1_right = fig_all.add_subplot(gs[1, 1])
-        ax2_left = fig_all.add_subplot(gs[2, 0])
-        ax2_right = fig_all.add_subplot(gs[2, 1])
-        ax3_left = fig_all.add_subplot(gs[3, 0])
-        ax3_right = fig_all.add_subplot(gs[3, 1])
+
         # Temperature subplot (spanning both columns):
         ax_temp = fig_all.add_subplot(gs[4, :])
 
         # Set labels for current plots (left column)
         ax0_left.set_ylabel("Drain I (A)")
-        ax1_left.set_ylabel("Bulk I (A)")
-        ax2_left.set_ylabel("Substrate I (A)")
-        ax3_left.set_ylabel("Gate I (A)")
-        ax3_left.set_xlabel(f"{variable} (V)")
+        ax1_left.set_ylabel("Gate I (A)")
+        ax1_left.set_xlabel(f"{variable} (V)")
         # Set labels for voltage plots (right column)
         ax0_right.set_ylabel("Drain V (V)")
-        ax1_right.set_ylabel("Bulk V (V)")
-        ax2_right.set_ylabel("Substrate V (V)")
-        ax3_right.set_ylabel("Gate V (V)")
-        ax3_right.set_xlabel(f"{variable} (V)")
+        ax1_right.set_ylabel("Gate V (V)")
+        ax1_right.set_xlabel(f"{variable} (V)")
         # Temperature plot labels
         ax_temp.set_xlabel("Time (s)")
         ax_temp.set_ylabel("Temperature (K)")
 
         # Create line objects:
         line_drain_source_i, = ax0_left.plot([], [], 'b-o', markersize=4, label='Drain Current')
-        line_bulk_source_i, = ax1_left.plot([], [], 'r-o', markersize=4, label='Bulk Current')
-        line_source_sub_i, = ax2_left.plot([], [], 'r-o', markersize=4, label='Substrate Current')
-        line_gate_source_i, = ax3_left.plot([], [], 'g-o', markersize=4, label='Gate Current')
+        line_gate_source_i, = ax1_left.plot([], [], 'g-o', markersize=4, label='Gate Current')
 
         line_drain_source_v, = ax0_right.plot([], [], 'b-o', markersize=4, label='Drain Voltage')
-        line_bulk_source_v, = ax1_right.plot([], [], 'r-o', markersize=4, label='Bulk Voltage')
-        line_source_sub_v, = ax2_right.plot([], [], 'r-o', markersize=4, label='Substrate Voltage')
-        line_gate_source_v, = ax3_right.plot([], [], 'g-o', markersize=4, label='Gate Voltage')
+        line_gate_source_v, = ax1_right.plot([], [], 'g-o', markersize=4, label='Gate Voltage')
 
         # Temperature lines (for two channels)
         line_tempA, = ax_temp.plot([], [], 'm-', label='Temperature A')
@@ -387,8 +372,8 @@ def voltage_sweep_three_instruments(
         ax_temp.legend(loc='best')
 
         fig_all.suptitle(
-            f"{variable} Sweep with Fixed {fixed} = {fixed_voltage} V, Vbulk_source = {bulk_source_voltage} V, "
-            f"Vsource_sub = {source_substrate_voltage} V",
+            f"{variable} Sweep with Fixed {fixed} = {fixed_voltage} V "
+            ,
             fontsize=12
         )
         fig_all.tight_layout()
@@ -409,12 +394,6 @@ def voltage_sweep_three_instruments(
     plotting_time = []
     plotting_tempA = []
     plotting_tempB = []
-
-    # Set body and substrate voltages:
-    set_voltage(source_substrate_voltage, source_sub_instrum, ascii_command_flavor='SCPI')
-    set_voltage(bulk_source_voltage, bulk_source_instr, ascii_command_flavor='SCPI')
-    Vb_src = bulk_source_voltage
-    Vsub_src = source_substrate_voltage
 
     # Set the "fixed" node:
     if fixed == 'Vd':
@@ -446,12 +425,7 @@ def voltage_sweep_three_instruments(
 
         # Measure currents and voltages:
         d_v, d_i = measure_iv(drain_source_instr, ascii_command_flavor='SCPI')
-        b_v, b_i = measure_iv(bulk_source_instr, ascii_command_flavor='SCPI')
-        sub_v, sub_i = measure_iv(source_sub_instrum, ascii_command_flavor='SCPI')
         g_v, g_i = measure_iv(gate_source_instr, ascii_command_flavor='SCPI')
-        if b_v is None:
-            b_v = bulk_source_voltage
-        # (If sub_v is None, you might want to set a default as needed)
 
         # Re-map fixed/variable source voltages:
         if fixed == 'Vd' and variable == 'Vg':
@@ -478,9 +452,9 @@ def voltage_sweep_three_instruments(
 
         # Append the measurement tuple (now 15 columns)
         data.append((
-            Vd_src, Vg_src, Vb_src, Vsub_src,  # Source voltages
-            d_i, b_i, sub_i, g_i,  # Measured currents
-            d_v, b_v, sub_v, g_v,  # Measured voltages
+            Vd_src, Vg_src,   # Source voltages
+            d_i, g_i,  # Measured currents
+            d_v, g_v,  # Measured voltages
             tempA, tempB, elapsed_time  # Temperature channels and elapsed time
         ))
 
@@ -488,22 +462,14 @@ def voltage_sweep_three_instruments(
         if live_plot:
             plotting_voltages.append(v_value)
             plotting_drain_source_currents.append(d_i)
-            plotting_bulk_source_currents.append(b_i)
-            plotting_source_sub_currents.append(sub_i)
             plotting_gate_source_currents.append(g_i)
             plotting_drain_source_voltages.append(d_v if d_v is not None else 0)
-            plotting_bulk_source_voltages.append(b_v if b_v is not None else 0)
-            plotting_source_sub_voltages.append(sub_v if sub_v is not None else 0)
             plotting_gate_source_voltages.append(g_v if g_v is not None else 0)
 
             # Update current and voltage lines:
             line_drain_source_i.set_data(plotting_voltages, plotting_drain_source_currents)
-            line_bulk_source_i.set_data(plotting_voltages, plotting_bulk_source_currents)
-            line_source_sub_i.set_data(plotting_voltages, plotting_source_sub_currents)
             line_gate_source_i.set_data(plotting_voltages, plotting_gate_source_currents)
             line_drain_source_v.set_data(plotting_voltages, plotting_drain_source_voltages)
-            line_bulk_source_v.set_data(plotting_voltages, plotting_bulk_source_voltages)
-            line_source_sub_v.set_data(plotting_voltages, plotting_source_sub_voltages)
             line_gate_source_v.set_data(plotting_voltages, plotting_gate_source_voltages)
 
             # Update temperature arrays if available:
@@ -517,7 +483,7 @@ def voltage_sweep_three_instruments(
                 ax_temp.autoscale_view()
 
             # Rescale current and voltage axes:
-            for ax in [ax0_left, ax1_left, ax2_left, ax3_left, ax0_right, ax1_right, ax2_right, ax3_right]:
+            for ax in [ax0_left, ax1_left, ax0_right, ax1_right]:
                 ax.relim()
                 ax.autoscale_view()
 
@@ -572,25 +538,25 @@ def self_heating_paused_measurements_test(Vds_set, Vgs, Vs, Vbs, num_measurement
         b_v, b_i = measure_iv(bulk_instr)
         #temp = read_temperature(lakeshore)
 
-        # --- Measure temperature (if a Lakeshore and start time are provided) ---
-        if lakeshore is not None and start_global is not None:
-            try:
-                tempA = read_temperature(lakeshore, channel='A')
-                tempB = read_temperature(lakeshore, channel='B')
-                elapsed_time = time.time() - start_global
-            except Exception as e:
-                print("Temperature measurement error:", e)
-                tempA, tempB, elapsed_time = None, None, None
-        else:
-            tempA, tempB, elapsed_time = None, None, None
+        # # --- Measure temperature (if a Lakeshore and start time are provided) ---
+        # if lakeshore is not None and start_global is not None:
+        #     try:
+        #         tempA = read_temperature(lakeshore, channel='A')
+        #         tempB = read_temperature(lakeshore, channel='B')
+        #         elapsed_time = time.time() - start_global
+        #     except Exception as e:
+        #         print("Temperature measurement error:", e)
+        #         tempA, tempB, elapsed_time = None, None, None
+        # else:
+        #     tempA, tempB, elapsed_time = None, None, None
 
-        # Append the measurement tuple (now 15 columns)
-        data.append((
-            Vds, Vgs, Vbs, Vs,  # Source voltages
-            d_i, b_i, s_i, g_i,  # Measured currents
-            d_v, b_v, s_v, g_v,  # Measured voltages
-            tempA, tempB, elapsed_time  # Temperature channels and elapsed time
-        ))
+        # # Append the measurement tuple (now 15 columns)
+        # data.append((
+        #     Vds, Vgs, Vbs, Vs,  # Source voltages
+        #     d_i, b_i, s_i, g_i,  # Measured currents
+        #     d_v, b_v, s_v, g_v,  # Measured voltages
+        #     tempA, tempB, elapsed_time  # Temperature channels and elapsed time
+        # ))
 
         print(f"Voltages \n Vds is {Vds} \n Vgs is {Vgs} \n Vs is {Vs} \n Vbs is {Vbs} \n Measurement taken.\n Now waiting for cooling interval...")
 
@@ -626,32 +592,23 @@ print("Available VISA resources:", rm.list_resources())
 
 drain_source_instrum_address = 'GPIB1::24::INSTR'
 gate_source_instrum_address = 'GPIB1::25::INSTR'
-bulk_source_instrum_address = 'GPIB1::23::INSTR'
-sourc_sub_instrum_address = 'GPIB1::22::INSTR'
-DAQ_mux_ds_top_address = 'USB0::0x05E6::0x6510::04510741::INSTR'
-DAQ_mux_gs_bottom_address = 'USB0::0x05E6::0x6510::04505354::INSTR'
+
 
 drain_source_instrum = rm.open_resource(drain_source_instrum_address, read_termination='\r', write_termination='\r')
 gate_source_instrum = rm.open_resource(gate_source_instrum_address, read_termination='\r', write_termination='\r')
-bulk_source_instrum = rm.open_resource(bulk_source_instrum_address, read_termination='\r', write_termination='\r')
-sourc_sub_instrum = rm.open_resource(sourc_sub_instrum_address, read_termination='\r', write_termination='\r')
-DAQ_mux_ds_top = rm.open_resource(DAQ_mux_ds_top_address, read_termination='\n', write_termination='\n')
-DAQ_mux_gs_bottom = rm.open_resource(DAQ_mux_gs_bottom_address, read_termination='\n', write_termination='\n')
 
 gate_source_instrum.timeout = 50000
 drain_source_instrum.timeout = 50000
-bulk_source_instrum.timeout = 50000
-sourc_sub_instrum.timeout = 50000
 
-# Open a Lakeshore instrument (for temperature)
-lakeshore_addr = 'GPIB0::12::INSTR'
-lakeshore = rm.open_resource(lakeshore_addr)
-lakeshore.timeout = 50000
+# # Open a Lakeshore instrument (for temperature)
+# lakeshore_addr = 'GPIB0::12::INSTR'
+# lakeshore = rm.open_resource(lakeshore_addr)
+# lakeshore.timeout = 50000
 
 configure_instr(0,
                 drain_source_instrum,
                 current_compliance=curr_compliance,
-                ascii_command_flavor='SCPI',
+                ascii_command_flavor='non-SCPI',
                 wire_mode=drain_instr_wire_mode,
                 disable_front_panel=disable_front_panel,
                 curr_range_hard_set = False,
@@ -661,532 +618,189 @@ configure_instr(0,
 configure_instr(0,
                 gate_source_instrum,
                 current_compliance=curr_compliance,
-                ascii_command_flavor='SCPI',
+                ascii_command_flavor='non-SCPI',
                 wire_mode=gate_instr_wire_mode,
                 disable_front_panel=disable_front_panel)
 
-configure_instr(0,
-                bulk_source_instrum,
-                current_compliance=curr_compliance,
-                ascii_command_flavor='SCPI',
-                wire_mode=gate_instr_wire_mode,
-                disable_front_panel=disable_front_panel)
 
-configure_instr(0,
-                sourc_sub_instrum,
-                current_compliance=curr_compliance,
-                ascii_command_flavor='SCPI',
-                wire_mode=gate_instr_wire_mode,
-                disable_front_panel=disable_front_panel,
-                curr_range_hard_set=True,
-                current_range=0.01,
-                voltage_range=200)
+transistor_key='nmos25_FET3' #just to test smu basic language
 
-mux_data = load_mux_instructions(mux_json_file)
 
-for transistor_key, mux_dict in mux_data.items():
+print(f"\nConfiguring transistor: {transistor_key}")
 
-    if 'nmos25_FET3' not in transistor_key:
-        continue
+flavor = None
+if '25' in transistor_key:
+    flavor = 'HV'
+else:
+    print('Please configure for MV and LV as needed.')
 
-    print(f"\nConfiguring transistor: {transistor_key}")
 
-    flavor = None
-    if '25' in transistor_key:
-        flavor = 'HV'
-    else:
-        print('Please configure for MV and LV as needed.')
-        break
+if 'pmos' in transistor_key:
+    fet_type = "PMOS"
+elif 'nmos' in transistor_key:
+    fet_type = "NMOS"
+else:
+    print('Invalid FET type in transistor_key.')
 
-    if 'pmos' in transistor_key:
-        fet_type = "PMOS"
-    elif 'nmos' in transistor_key:
-        fet_type = "NMOS"
-    else:
-        print('Invalid FET type in transistor_key.')
-        break
 
-    os.makedirs(data_folder, exist_ok=True)
-    os.makedirs(f'{data_folder}/{flavor}', exist_ok=True)
+os.makedirs(data_folder, exist_ok=True)
+os.makedirs(f'{data_folder}/{flavor}', exist_ok=True)
 
-    bias_instructions = load_bias_instructions(fet_type, bias_json_file)
+bias_instructions = load_bias_instructions(fet_type, bias_json_file)
 
-    try:
-        flavor_index = {"LV": 0, "MV": 1, "HV": 2}[flavor]
-    except KeyError:
-        print("Invalid flavor, expected 'LV', 'MV', or 'HV'.")
-        continue
+try:
+    flavor_index = {"LV": 0, "MV": 1, "HV": 2}[flavor]
+except KeyError:
+    print("Invalid flavor, expected 'LV', 'MV', or 'HV'.")
 
-    # Extract relevant bias sets
-    gate_source_voltages_transfer_char_s1 = bias_instructions[0][3][flavor_index]
-    drain_source_voltages_transfer_char_s1 = bias_instructions[0][2][flavor_index]
-    bulk_source_voltages_transfer_char_s1 = bias_instructions[0][1][flavor_index]
-    source_sub_voltages_transfer_char_s1 = bias_instructions[0][0][flavor_index]
 
-    gate_source_voltages_transfer_char_s2 = bias_instructions[1][3][flavor_index]
-    drain_source_voltages_transfer_char_s2 = bias_instructions[1][2][flavor_index]
-    bulk_source_voltages_transfer_char_s2 = bias_instructions[1][1][flavor_index]
-    source_sub_voltages_transfer_char_s2 = bias_instructions[1][0][flavor_index]
+# Extract relevant bias sets
+gate_source_voltages_transfer_char_s1 = bias_instructions[0][3][flavor_index]
+drain_source_voltages_transfer_char_s1 = bias_instructions[0][2][flavor_index]
 
-    drain_source_voltages_output_char = bias_instructions[2][2][flavor_index]
-    gate_source_voltages_output_char = bias_instructions[2][3][flavor_index]
-    bulk_source_voltages_output_char = bias_instructions[2][1][flavor_index]
-    source_sub_voltages_output_char = bias_instructions[2][0][flavor_index]
+gate_source_voltages_transfer_char_s2 = bias_instructions[1][3][flavor_index]
+drain_source_voltages_transfer_char_s2 = bias_instructions[1][2][flavor_index]
 
-    DAQ_mux_ds_top.write('ROUTe:OPEN:ALL')
-    DAQ_mux_gs_bottom.write('ROUTe:OPEN:ALL')
+drain_source_voltages_output_char = bias_instructions[2][2][flavor_index]
+gate_source_voltages_output_char = bias_instructions[2][3][flavor_index]
 
-    DAQ_mux_ds_top.write(':FUNC "VOLT:DC"')
-    DAQ_mux_gs_bottom.write(':FUNC "VOLT:DC"')
+start_time = time.time()
+os.makedirs(f'{data_folder}/{flavor}/{transistor_key}', exist_ok=True)
 
-    for mux_name, mux_instructions in mux_dict.items():
-        print(f"  → Setting up {mux_name}")
-        for instruc in mux_instructions:
-            channel_idx = instruc["channel"]
-            bias_type = instruc["bias_type"]
-            operation = instruc["operation"]
-            keithley_channel = 100 + channel_idx
+# Configure the voltages for the source to substrate
+if 'pmos' in transistor_key:
+    source_substrate_voltage_default = 25
+elif 'nmos' in transistor_key:
+    source_substrate_voltage_default = 0
+else:
+    print('pmos or nmos is not in transistor_key. Please update instructions to include this information')
 
-            if "DS" in bias_type:
-                DAQ_mux_ds_top.write(f"ROUT:CLOS (@{keithley_channel})")
-                print(f"    Closed channel {keithley_channel} (bias={bias_type}, op={operation}) in top DS MUX.")
-            elif "GS" in bias_type:
-                DAQ_mux_gs_bottom.write(f"ROUT:CLOS (@{keithley_channel})")
-                print(f"    Closed channel {keithley_channel} (bias={bias_type}, op={operation}) in bottom GS MUX.")
-            else:
-                print('    Invalid bias specification (not DS or GS), skipping.')
 
-    start_time = time.time()
-    os.makedirs(f'{data_folder}/{flavor}/{transistor_key}', exist_ok=True)
+##################################   Transfer Char (Set 2)   #############################
+for drain_source_voltage in drain_source_voltages_transfer_char_s2:
+    if abs(drain_source_voltage) == 0.1 or abs(drain_source_voltage) == 25:
+        transfer_char_data = voltage_sweep_three_instruments(
+            fixed='Vd',
+            variable='Vg',
+            sweep_voltages=gate_source_voltages_transfer_char_s2,
+            fixed_voltage=drain_source_voltage,
+            drain_source_instr=drain_source_instrum,
+            gate_source_instr=gate_source_instrum,
+            live_plot=live_plotting,
+            curr_compliance=curr_compliance,
+            drain_curr_range=drain_curr_range,
+            settle_delay=settle_delay,
+            #lakeshore=lakeshore,
+            start_global=start_time
+        )
+        drain_source_voltage_str = str(drain_source_voltage).replace('.', 'p')
 
-    # Configure the voltages for the source to substrate
-    if 'pmos' in transistor_key:
-        source_substrate_voltage_default = 25
-    elif 'nmos' in transistor_key:
-        source_substrate_voltage_default = 0
-    else:
-        print('pmos or nmos is not in transistor_key. Please update instructions to include this information')
-        break
+        # Define the CSV file path
+        csv_filename = f'idvg_Vd{drain_source_voltage_str}.csv'
+        csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
 
-    # ##################################   Transfer Characterization (Set 1)   #############################
-    # if 'pmos' in transistor_key:
-    #     for body_source_voltage in bulk_source_voltages_transfer_char_s1:
-    #         if body_source_voltage == 0:
-    #             continue  # no need to redo Vb 0 measurements
-    #
-    #         for drain_source_voltage in drain_source_voltages_transfer_char_s1:
-    #             transfer_char_data = voltage_sweep_three_instruments(
-    #                 fixed='Vd',
-    #                 variable='Vg',
-    #                 sweep_voltages=gate_source_voltages_transfer_char_s1,
-    #                 fixed_voltage=drain_source_voltage,
-    #                 bulk_source_voltage=body_source_voltage,
-    #                 source_substrate_voltage=source_substrate_voltage_default,
-    #                 drain_source_instr=drain_source_instrum,
-    #                 gate_source_instr=gate_source_instrum,
-    #                 bulk_source_instr=bulk_source_instrum,
-    #                 source_sub_instrum=sourc_sub_instrum,
-    #                 live_plot=live_plotting,
-    #                 curr_compliance=curr_compliance,
-    #                 drain_curr_range=drain_curr_range,
-    #                 settle_delay=settle_delay,
-    #                 lakeshore=lakeshore,
-    #                 start_global=start_time
-    #             )
-    #             drain_source_voltage_str = str(drain_source_voltage).replace('.', 'p')
-    #             body_source_voltage_str = str(body_source_voltage).replace('.', 'p')
-    #             source_sub_voltage_str = str(source_substrate_voltage_default).replace('.', 'p')
-    #
-    #             # Define the CSV file path
-    #             csv_filename = f'idvg_Vd{drain_source_voltage_str}_Vb{body_source_voltage_str}_Vsub{source_sub_voltage_str}.csv'
-    #             csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
-    #
-    #             # Ensure the directory exists
-    #             os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-    #             # Extract relevant columns
-    #             Vd_src = [row[0] for row in transfer_char_data]
-    #             Vg_src = [row[1] for row in transfer_char_data]
-    #             body_source_voltage_src = [row[2] for row in transfer_char_data]
-    #             Id = [row[4] for row in transfer_char_data]
-    #
-    #             # Open the CSV file for writing
-    #             with open(csv_path, 'w', newline='') as csvfile:
-    #                 writer = csv.writer(csvfile)
-    #
-    #                 # Write the constant voltage section
-    #                 writer.writerow(['#Constant Voltage'])
-    #                 writer.writerow(['VD', Vd_src[0]])  # First value of Vd_src
-    #                 writer.writerow(['VS', '0'])  # VS set to 0
-    #                 writer.writerow(['VB', body_source_voltage_src[0]])  # First value of body_source_voltage_src
-    #                 writer.writerow(['VSUB', source_substrate_voltage_default])  # substrate_source_voltage set to 25 for pmos
-    #
-    #                 # Write the data header
-    #                 writer.writerow(['#Data'])
-    #                 writer.writerow(['VG', 'ID'])
-    #
-    #                 # Write the data rows
-    #                 for vg, id_val in zip(Vg_src, Id):
-    #                     writer.writerow([vg, id_val])
-    #
-    #             # Now saving 9 columns: (Vd_src, Vg_src, body_source_voltage_src, Id, Ib, Ig, Vd_meas, body_source_voltage_meas, Vg_meas)
-    #             np.savetxt(
-    #                 f'{data_folder}/{flavor}/{transistor_key}/idvg_Vd{drain_source_voltage_str}_Vb'
-    #                 f'{body_source_voltage_str}_Vsub{source_sub_voltage_str}.csv',
-    #                 transfer_char_data,
-    #                 delimiter=',',
-    #                 header='Vd_src, Vg_src, Vb_src, Vsub_src, Id, Ib, Isub, Ig, Vd_meas, Vb_meas, Vsub_meas, Vg_meas,'
-    #                        'TempA,TempB,Elapsed_time',
-    #                 comments=''
-    #             )
-    #
-    # if 'nmos' in transistor_key:
-    #     for source_sub_voltage in source_sub_voltages_transfer_char_s1:
-    #         if source_sub_voltage == 0:
-    #             continue  # no need to redo Vb 0 measurements
-    #
-    #         for drain_source_voltage in drain_source_voltages_transfer_char_s1:
-    #             transfer_char_data = voltage_sweep_three_instruments(
-    #                 fixed='Vd',
-    #                 variable='Vg',
-    #                 sweep_voltages=gate_source_voltages_transfer_char_s1,
-    #                 fixed_voltage=drain_source_voltage,
-    #                 bulk_source_voltage=bulk_source_voltages_transfer_char_s1[0],
-    #                 source_substrate_voltage=source_sub_voltage,
-    #                 drain_source_instr=drain_source_instrum,
-    #                 gate_source_instr=gate_source_instrum,
-    #                 bulk_source_instr=bulk_source_instrum,
-    #                 source_sub_instrum=sourc_sub_instrum,
-    #                 live_plot=live_plotting,
-    #                 curr_compliance=curr_compliance,
-    #                 drain_curr_range=drain_curr_range,
-    #                 settle_delay=settle_delay,
-    #                 lakeshore=lakeshore,
-    #                 start_global=start_time
-    #             )
-    #             drain_source_voltage_str = str(drain_source_voltage).replace('.', 'p')
-    #             body_source_voltage_str = str(bulk_source_voltages_transfer_char_s1[0]).replace('.', 'p') #body to source voltage
-    #             source_sub_voltage_str = str(source_sub_voltage).replace('.', 'p')
-    #
-    #             # Define the CSV file path
-    #             csv_filename = f'idvg_Vd{drain_source_voltage_str}_Vs{source_sub_voltage_str}_Vb{body_source_voltage_str}.csv' #body=bulk=sub
-    #             csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
-    #
-    #             # Ensure the directory exists
-    #             os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-    #             # Extract relevant columns
-    #             Vd_src = [row[0] for row in transfer_char_data]
-    #             Vg_src = [row[1] for row in transfer_char_data]
-    #             body_source_voltage_src = [row[3] for row in transfer_char_data] # sub to source voltage
-    #             Id = [row[4] for row in transfer_char_data]
-    #
-    #             # Open the CSV file for writing
-    #             with open(csv_path, 'w', newline='') as csvfile:
-    #                 writer = csv.writer(csvfile)
-    #
-    #                 # Write the constant voltage section
-    #                 writer.writerow(['#Constant Voltage'])
-    #                 writer.writerow(['VD', Vd_src[0]])  # First value of Vd_src
-    #                 writer.writerow(['VS', body_source_voltage_src[0]])  # VS set to mimic body bias
-    #                 writer.writerow(['VB', source_substrate_voltage_default]) # substrate is effectively the body for nmos, set to 0
-    #                 '''eliminated vsub for clearer implementation in Mystic -faith 2/19/25
-    #                 writer.writerow(['VB', body_source_voltage_src[0]])  # First value of body_source_voltage_src
-    #                 writer.writerow(['VSUB', source_substrate_voltage_default])  # substrate_source_voltage set to 0'''
-    #
-    #                 # Write the data header
-    #                 writer.writerow(['#Data'])
-    #                 writer.writerow(['VG', 'ID'])
-    #
-    #                 # Write the data rows
-    #                 for vg, id_val in zip(Vg_src, Id):
-    #                     writer.writerow([vg, id_val])
-    #
-    #             # Now saving 9 columns: (Vd_src, Vg_src, body_source_voltage_src, Id, Ib, Ig, Vd_meas, body_source_voltage_meas, Vg_meas)
-    #             np.savetxt(
-    #                 f'{data_folder}/{flavor}/{transistor_key}/idvg_Vd{drain_source_voltage_str}_Vb'
-    #                 f'{body_source_voltage_str}_Vsub{source_sub_voltage_str}.csv',
-    #                 transfer_char_data,
-    #                 delimiter=',',
-    #                 header='Vd_src, Vg_src, Vb_src, Vsub_src, Id, Ib, Isub, Ig, Vd_meas, Vb_meas, Vsub_meas, '
-    #                        'Vg_meas,TempA,TempB,Elapsed_time',
-    #                 comments=''
-    #             )
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+        # Extract relevant columns
+        Vd_src = [row[0] for row in transfer_char_data]
+        Vg_src = [row[1] for row in transfer_char_data]
+        Id = [row[4] for row in transfer_char_data]
 
-    # ##################################   Transfer Char (Set 2)   #############################
-    # for drain_source_voltage in drain_source_voltages_transfer_char_s2:
-    #     if abs(drain_source_voltage) == 0.1 or abs(drain_source_voltage) == 25:
-    #         transfer_char_data = voltage_sweep_three_instruments(
-    #             fixed='Vd',
-    #             variable='Vg',
-    #             sweep_voltages=gate_source_voltages_transfer_char_s2,
-    #             fixed_voltage=drain_source_voltage,
-    #             bulk_source_voltage=bulk_source_voltages_transfer_char_s2[0],
-    #             source_substrate_voltage=source_substrate_voltage_default,
-    #             drain_source_instr=drain_source_instrum,
-    #             gate_source_instr=gate_source_instrum,
-    #             bulk_source_instr=bulk_source_instrum,
-    #             source_sub_instrum=sourc_sub_instrum,
-    #             live_plot=live_plotting,
-    #             curr_compliance=curr_compliance,
-    #             drain_curr_range=drain_curr_range,
-    #             settle_delay=settle_delay,
-    #             lakeshore=lakeshore,
-    #             start_global=start_time
-    #         )
-    #         drain_source_voltage_str = str(drain_source_voltage).replace('.', 'p')
-    #         body_source_voltage_str = str(bulk_source_voltages_transfer_char_s2[0]).replace('.', 'p')
-    #         source_sub_voltage_str = str(source_substrate_voltage_default).replace('.', 'p')
-    #
-    #         # Define the CSV file path
-    #         csv_filename = f'idvg_Vd{drain_source_voltage_str}_Vb{body_source_voltage_str}_Vsub{source_sub_voltage_str}.csv'
-    #         csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
-    #
-    #         # Ensure the directory exists
-    #         os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-    #         # Extract relevant columns
-    #         Vd_src = [row[0] for row in transfer_char_data]
-    #         Vg_src = [row[1] for row in transfer_char_data]
-    #         body_source_voltage_src = [row[2] for row in transfer_char_data]
-    #         Id = [row[4] for row in transfer_char_data]
-    #
-    #         # Open the CSV file for writing
-    #         with open(csv_path, 'w', newline='') as csvfile:
-    #             writer = csv.writer(csvfile)
-    #
-    #             # Write the constant voltage section
-    #             writer.writerow(['#Constant Voltage'])
-    #             writer.writerow(['VD', Vd_src[0]])  # First value of Vd_src
-    #             writer.writerow(['VS', '0'])  # VS set to 0
-    #             writer.writerow(['VB', body_source_voltage_src[0]])  # First value of body_source_voltage_src
-    #             if 'pmos' in transistor_key: #only include source to sub voltage for pmos
-    #                 writer.writerow(['VSUB', source_substrate_voltage_default])
-    #
-    #             # Write the data header
-    #             writer.writerow(['#Data'])
-    #             writer.writerow(['VG', 'ID'])
-    #
-    #             # Write the data rows
-    #             for vg, id_val in zip(Vg_src, Id):
-    #                 writer.writerow([vg, id_val])
-    #
-    #         # Now saving 9 columns: (Vd_src, Vg_src, body_source_voltage_src, Id, Ib, Ig, Vd_meas, body_source_voltage_meas, Vg_meas)
-    #         np.savetxt(
-    #             f'{data_folder}/{flavor}/{transistor_key}/idvg_Vd{drain_source_voltage_str}_Vb{body_source_voltage_str}_Vsub{source_sub_voltage_str}.csv',
-    #             transfer_char_data,
-    #             delimiter=',',
-    #             header='Vd_src, Vg_src, Vb_src,Vsub_src, Id, Ib, Isub, Ig, Vd_meas, Vb_meas, Vsub_meas, Vg_meas,TempA,TempB,Elapsed_time',
-    #             comments=''
-    #         )
-    #         set_voltage(0, drain_source_instrum) #letting transistor cool btwn measurements
-    #         set_voltage(0, bulk_source_instrum)
-    #         set_voltage(0, gate_source_instrum)
-    #         set_voltage(0, sourc_sub_instrum)
-    #         time.sleep(60)
+        # Open the CSV file for writing
+        with open(csv_path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
 
-    #################################### Output Characteristics #######################################
-    for gate_source_voltage in gate_source_voltages_output_char:
-        if abs(gate_source_voltage)>20.5:
-            output_char_data = voltage_sweep_three_instruments(
-                fixed='Vg',
-                variable='Vd',
-                sweep_voltages=drain_source_voltages_output_char,
-                fixed_voltage=gate_source_voltage,
-                bulk_source_voltage=bulk_source_voltages_output_char[0],
-                source_substrate_voltage=source_substrate_voltage_default,
-                drain_source_instr=drain_source_instrum,
-                gate_source_instr=gate_source_instrum,
-                bulk_source_instr=bulk_source_instrum,
-                source_sub_instrum=sourc_sub_instrum,
-                live_plot=live_plotting,
-                curr_compliance=curr_compliance,
-                drain_curr_range=drain_curr_range,
-                settle_delay=settle_delay,
-                lakeshore=lakeshore,
-                start_global=start_time
-            )
+            # Write the constant voltage section
+            writer.writerow(['#Constant Voltage'])
+            writer.writerow(['VD', Vd_src[0]])  # First value of Vd_src
+            writer.writerow(['VS', '0'])  # VS set to 0
 
-            gate_source_voltage_str = str(gate_source_voltage).replace('.', 'p')
-            body_source_voltage_str = str(bulk_source_voltages_output_char[0]).replace('.', 'p')
-            source_sub_voltage_str = str(source_substrate_voltage_default).replace('.', 'p')
+            # Write the data header
+            writer.writerow(['#Data'])
+            writer.writerow(['VG', 'ID'])
 
-            # Define the CSV file path
-            csv_filename = f'idvd_Vg{gate_source_voltage_str}_Vb{body_source_voltage_str}_Vsub{source_sub_voltage_str}.csv'
-            csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
+            # Write the data rows
+            for vg, id_val in zip(Vg_src, Id):
+                writer.writerow([vg, id_val])
 
-            # Ensure the directory exists
-            os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-            # Extract relevant columns
-            Vd_src = [row[0] for row in output_char_data]
-            Vg_src = [row[1] for row in output_char_data]
-            body_source_voltage_src = [row[2] for row in output_char_data]
-            Id = [row[4] for row in output_char_data]
+        # Now saving 9 columns: (Vd_src, Vg_src, body_source_voltage_src, Id, Ib, Ig, Vd_meas, body_source_voltage_meas, Vg_meas)
+        np.savetxt(
+            f'{data_folder}/{flavor}/{transistor_key}/idvg_Vd{drain_source_voltage_str}.csv',
+            transfer_char_data,
+            delimiter=',',
+            header='Vd_src, Vg_src, Id, Ig, Vd_meas, Vg_meas,TempA,TempB,Elapsed_time',
+            comments=''
+        )
+        set_voltage(0, drain_source_instrum) #letting transistor cool btwn measurements
+        set_voltage(0, gate_source_instrum)
+        time.sleep(60)
 
-            # Open the CSV file for writing
-            with open(csv_path, 'w', newline='') as csvfile:
-                writer = csv.writer(csvfile)
+#################################### Output Characteristics #######################################
+for gate_source_voltage in gate_source_voltages_output_char:
+    if abs(gate_source_voltage)>20.5:
+        output_char_data = voltage_sweep_three_instruments(
+            fixed='Vg',
+            variable='Vd',
+            sweep_voltages=drain_source_voltages_output_char,
+            fixed_voltage=gate_source_voltage,
+            drain_source_instr=drain_source_instrum,
+            gate_source_instr=gate_source_instrum,
+            live_plot=live_plotting,
+            curr_compliance=curr_compliance,
+            drain_curr_range=drain_curr_range,
+            settle_delay=settle_delay,
+            #lakeshore=lakeshore,
+            start_global=start_time
+        )
 
-                # Write the constant voltage section
-                writer.writerow(['#Constant Voltage'])
-                writer.writerow(['VG', Vg_src[0]])  # First value of Vd_src
-                writer.writerow(['VS', '0'])  # VS set to 0
-                writer.writerow(['VB', body_source_voltage_src[0]])  # First value of body_source_voltage_src
-                if 'pmos' in transistor_key:
-                    writer.writerow(['VSUB', source_substrate_voltage_default])  # substrate_source_voltage set to 0-nmos/25-pmos
+        gate_source_voltage_str = str(gate_source_voltage).replace('.', 'p')
 
-                # Write the data header
-                writer.writerow(['#Data'])
-                writer.writerow(['VD', 'ID'])
+        # Define the CSV file path
+        csv_filename = f'idvd_Vg{gate_source_voltage_str}.csv'
+        csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
 
-                # Write the data rows
-                for vd, id_val in zip(Vd_src, Id):
-                    writer.writerow([vd, id_val])
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+        # Extract relevant columns
+        Vd_src = [row[0] for row in output_char_data]
+        Vg_src = [row[1] for row in output_char_data]
+        Id = [row[4] for row in output_char_data]
 
-            # Saving 9 columns again
-            np.savetxt(
-                f'{data_folder}/{flavor}/{transistor_key}/idvd_Vg{gate_source_voltage_str}_Vb{body_source_voltage_str}_Vsub'
-                f'{source_sub_voltage_str}.csv',
-                output_char_data,
-                delimiter=',',
-                header='Vd_src, Vg_src, Vb_src,Vsub_src, Id, Ib, Isub, Ig, Vd_meas, Vb_meas, Vsub_meas, Vg_meas,TempA,'
-                       'TempB,Elapsed_time',
-                comments=''
-            )
+        # Open the CSV file for writing
+        with open(csv_path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+
+            # Write the constant voltage section
+            writer.writerow(['#Constant Voltage'])
+            writer.writerow(['VG', Vg_src[0]])  # First value of Vd_src
+            writer.writerow(['VS', '0'])  # VS set to 0
+
+            # Write the data header
+            writer.writerow(['#Data'])
+            writer.writerow(['VD', 'ID'])
+
+            # Write the data rows
+            for vd, id_val in zip(Vd_src, Id):
+                writer.writerow([vd, id_val])
+
+        # Saving 9 columns again
+        np.savetxt(
+            f'{data_folder}/{flavor}/{transistor_key}/idvd_Vg{gate_source_voltage_str}.csv',
+            output_char_data,
+            delimiter=',',
+            header='Vd_src, Vg_src, Id, Ig, Vd_meas, Vg_meas,TempA,'
+                   'TempB,Elapsed_time',
+            comments=''
+        )
 
 
 
-    # ################################# Output Characteristics Backward ####################################
-    # for gate_source_voltage in gate_source_voltages_output_char:
-    #     drain_source_voltages_output_char_bkwd=drain_source_voltages_output_char[::-1]
-    #     if abs(gate_source_voltage) > 20.5:
-    #         output_char_data = voltage_sweep_three_instruments(
-    #             fixed='Vg',
-    #             variable='Vd',
-    #             sweep_voltages=drain_source_voltages_output_char_bkwd,
-    #             fixed_voltage=gate_source_voltage,
-    #             bulk_source_voltage=bulk_source_voltages_output_char[0],
-    #             source_substrate_voltage=source_substrate_voltage_default,
-    #             drain_source_instr=drain_source_instrum,
-    #             gate_source_instr=gate_source_instrum,
-    #             bulk_source_instr=bulk_source_instrum,
-    #             source_sub_instrum=sourc_sub_instrum,
-    #             live_plot=live_plotting,
-    #             curr_compliance=curr_compliance,
-    #             drain_curr_range=drain_curr_range,
-    #             settle_delay=settle_delay,
-    #             lakeshore=lakeshore,
-    #             start_global=start_time
-    #         )
-    #
-    #         gate_source_voltage_str = str(gate_source_voltage).replace('.', 'p')
-    #         body_source_voltage_str = str(bulk_source_voltages_output_char[0]).replace('.', 'p')
-    #         source_sub_voltage_str = str(source_substrate_voltage_default).replace('.', 'p')
-    #
-    #         # Define the CSV file path
-    #         csv_filename = f'idvd_Vg{gate_source_voltage_str}_Vb{body_source_voltage_str}_Vsub{source_sub_voltage_str}_backward.csv'
-    #         csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
-    #
-    #         # Ensure the directory exists
-    #         os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-    #         # Extract relevant columns
-    #         Vd_src = [row[0] for row in output_char_data]
-    #         Vg_src = [row[1] for row in output_char_data]
-    #         body_source_voltage_src = [row[2] for row in output_char_data]
-    #         Id = [row[4] for row in output_char_data]
-    #
-    #         # Open the CSV file for writing
-    #         with open(csv_path, 'w', newline='') as csvfile:
-    #             writer = csv.writer(csvfile)
-    #
-    #             # Write the constant voltage section
-    #             writer.writerow(['#Constant Voltage'])
-    #             writer.writerow(['VG', Vg_src[0]])  # First value of Vd_src
-    #             writer.writerow(['VS', '0'])  # VS set to 0
-    #             writer.writerow(['VB', body_source_voltage_src[0]])  # First value of body_source_voltage_src
-    #             if 'pmos' in transistor_key:
-    #                 writer.writerow(
-    #                     ['VSUB', source_substrate_voltage_default])  # substrate_source_voltage set to 0-nmos/25-pmos
-    #
-    #             # Write the data header
-    #             writer.writerow(['#Data'])
-    #             writer.writerow(['VD', 'ID'])
-    #
-    #             # Write the data rows
-    #             for vd, id_val in zip(Vd_src, Id):
-    #                 writer.writerow([vd, id_val])
-    #
-    #         # Saving 9 columns again
-    #         np.savetxt(
-    #             f'{data_folder}/{flavor}/{transistor_key}/idvd_Vg{gate_source_voltage_str}_Vb{body_source_voltage_str}_Vsub'
-    #             f'{source_sub_voltage_str}_backward.csv',
-    #             output_char_data,
-    #             delimiter=',',
-    #             header='Vd_src, Vg_src, Vb_src,Vsub_src, Id, Ib, Isub, Ig, Vd_meas, Vb_meas, Vsub_meas, Vg_meas,TempA,'
-    #                    'TempB,Elapsed_time',
-    #             comments=''
-    #         )
-    #
-    #         set_voltage(0, gate_source_instrum)  # letting transistor cool btwn measurements
-    #         set_voltage(0, drain_source_instrum)
-    #         set_voltage(0, bulk_source_instrum)
-    #         set_voltage(0, sourc_sub_instrum)
-    #         time.sleep(120)
+#be sure all voltages are set to zero
+set_voltage(0, gate_source_instrum)
+set_voltage(0, drain_source_instrum)
 
-
-
-    # # Parameters for the self-heating test:
-    # # doing entire sweep, resting for 2 mins in between
-    # Vds_test = drange(-20,-25,-0.2)  # , i for i in range(21,25,1)]
-    # # Fixed drain voltage starting from [5,10,15,20 to 25] (in V)
-    # Vgs_test = -25
-    # # Fixed gate voltage (in V)
-    # num_measurements = 1  # Number of times you want to take the measurement
-    # measurement_interval = 0  # seconds to wait after setting voltage before taking measurement
-    # cooling_interval = 120  # seconds to wait after turning voltage off for cooling
-    #
-    # print("Starting self-heating test...")
-    #
-    # self_heating_paused_data = self_heating_paused_measurements_test(
-    #     Vds_set=Vds_test,
-    #     Vgs=Vgs_test,
-    #     Vs=source_substrate_voltage_default,
-    #     Vbs=bulk_source_voltages_output_char[0],
-    #     num_measurements=num_measurements,
-    #     measurement_interval=measurement_interval,
-    #     cooling_interval=cooling_interval,
-    #     drain_instr=drain_source_instrum,
-    #     gate_instr=gate_source_instrum,
-    #     bulk_instr=bulk_source_instrum,
-    #     source_instr=sourc_sub_instrum,
-    #     start_global=start_time)
-    #
-    # gate_source_voltage_str = str(Vgs_test).replace('.', 'p')
-    # body_source_voltage_str = str(bulk_source_voltages_output_char[0]).replace('.', 'p')
-    # source_sub_voltage_str = str(source_substrate_voltage_default).replace('.', 'p')
-    #
-    # # Extract relevant columns
-    # Vd_src = [row[0] for row in self_heating_paused_data]
-    # Vg_src = [row[1] for row in self_heating_paused_data]
-    # body_source_voltage_src = [row[2] for row in self_heating_paused_data]
-    # Id = [row[4] for row in self_heating_paused_data]
-    #
-    # # Saving 9 columns again
-    # np.savetxt(
-    #     f'{data_folder}/{flavor}/{transistor_key}/idvd_paused_meas_Vg{gate_source_voltage_str}_Vb{body_source_voltage_str}_Vsub'
-    #     f'{source_sub_voltage_str}_Test2.csv',
-    #     self_heating_paused_data,
-    #     delimiter=',',
-    #     header='Vd_src, Vg_src, Vb_src,Vsub_src, Id, Ib, Isub, Ig, Vd_meas, Vb_meas, Vsub_meas, Vg_meas,TempA,'
-    #            'TempB,Elapsed_time',
-    #     comments=''
-    # )
-
-    #be sure all voltages are set to zero
-    set_voltage(0, gate_source_instrum)
-    set_voltage(0, bulk_source_instrum)
-    set_voltage(0, drain_source_instrum)
-    set_voltage(0, sourc_sub_instrum)
-
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    minutes = int(elapsed_time // 60)
-    seconds = elapsed_time % 60
-    print(f"Transistor Characterization completed in {minutes} minutes {seconds:.2f} seconds.")
+end_time = time.time()
+elapsed_time = end_time - start_time
+minutes = int(elapsed_time // 60)
+seconds = elapsed_time % 60
+print(f"Transistor Characterization completed in {minutes} minutes {seconds:.2f} seconds.")
