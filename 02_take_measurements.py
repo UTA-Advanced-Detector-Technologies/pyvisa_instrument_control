@@ -325,12 +325,10 @@ def voltage_sweep_three_instruments(
         plt.ion()  # interactive mode
         # Create a figure with 5 rows; rows 0-3 are for currents/voltages and row 4 is for temperature.
         fig_all = plt.figure(figsize=(10, 10))
-        gs = gridspec.GridSpec(2, 2, height_ratios=[1, 1])
+        gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1])
         # Rows for currents and voltages:
-        ax0_left = fig_all.add_subplot(gs[0, 0])
-        ax0_right = fig_all.add_subplot(gs[0, 1])
-        ax1_left = fig_all.add_subplot(gs[1, 0])
-        ax1_right = fig_all.add_subplot(gs[1, 1])
+        ax0_left = fig_all.add_subplot(gs[0])
+        ax1_left = fig_all.add_subplot(gs[1])
 
 
         # Set labels for current plots (left column)
@@ -338,17 +336,9 @@ def voltage_sweep_three_instruments(
         ax1_left.set_ylabel("Gate I (A)")
         ax1_left.set_xlabel(f"{variable} (V)")
 
-        # Set labels for voltage plots (right column)
-        ax0_right.set_ylabel("Drain V (V)")
-        ax1_right.set_ylabel("Gate V (V)")
-        ax1_right.set_xlabel(f"{variable} (V)")
-
         # Create line objects:
         line_drain_source_i, = ax0_left.plot([], [], 'b-o', markersize=4, label='Drain Current')
         line_gate_source_i, = ax1_left.plot([], [], 'g-o', markersize=4, label='Gate Current')
-
-        line_drain_source_v, = ax0_right.plot([], [], 'b-o', markersize=4, label='Drain Voltage')
-        line_gate_source_v, = ax1_right.plot([], [], 'g-o', markersize=4, label='Gate Voltage')
 
         fig_all.suptitle(
             f"{variable} Sweep with Fixed {fixed} = {fixed_voltage} V "
@@ -366,6 +356,7 @@ def voltage_sweep_three_instruments(
     plotting_drain_source_voltages = []
     plotting_gate_source_voltages = []
 
+    time.sleep(0.5)
     # Set the "fixed" node:
     if fixed == 'Vd':
         set_voltage(fixed_voltage, drain_source_instr, ascii_command_flavor='non-SCPI')
@@ -374,6 +365,7 @@ def voltage_sweep_three_instruments(
     else:
         print("Warning: 'fixed' should be 'Vd' or 'Vg' in this example code.")
 
+    time.sleep(0.5)
     # Initialize the "variable" node to 0 V:
     if variable == 'Vd':
         set_voltage(0, drain_source_instr, ascii_command_flavor='non-SCPI')
@@ -383,6 +375,7 @@ def voltage_sweep_three_instruments(
         print("Warning: 'variable' should be 'Vd' or 'Vg' in this example code.")
 
     for v_value in sweep_voltages:
+        time.sleep(0.5)
         # Update the "variable" voltage:
         if variable == 'Vd':
             set_voltage(v_value, drain_source_instr, ascii_command_flavor='non-SCPI')
@@ -425,21 +418,21 @@ def voltage_sweep_three_instruments(
             # Update current and voltage lines:
             line_drain_source_i.set_data(plotting_voltages, plotting_drain_source_currents)
             line_gate_source_i.set_data(plotting_voltages, plotting_gate_source_currents)
-            line_drain_source_v.set_data(plotting_voltages, plotting_drain_source_voltages)
-            line_gate_source_v.set_data(plotting_voltages, plotting_gate_source_voltages)
 
             # Rescale current and voltage axes:
-            for ax in [ax0_left, ax1_left, ax0_right, ax1_right]:
+            for ax in [ax0_left, ax1_left]:
                 ax.relim()
                 ax.autoscale_view()
 
             fig_all.canvas.draw()
             fig_all.canvas.flush_events()
 
+    time.sleep(0.5) #if you go to fast the older smus give an out of range error, so just keep this in there
+
     # Return SMU outputs to 0 V:
     set_voltage(0, drain_source_instr, ascii_command_flavor='non-SCPI')
     set_voltage(0, gate_source_instr, ascii_command_flavor='non-SCPI')
-    time.sleep(0.01)
+    time.sleep(0.5)
     if live_plot:
         plt.close(fig_all)
 
