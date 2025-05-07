@@ -375,7 +375,6 @@ def voltage_sweep_three_instruments(
         print("Warning: 'variable' should be 'Vd' or 'Vg' in this example code.")
 
     for v_value in sweep_voltages:
-        time.sleep(0.5)
         # Update the "variable" voltage:
         if variable == 'Vd':
             set_voltage(v_value, drain_source_instr, ascii_command_flavor='non-SCPI')
@@ -451,7 +450,7 @@ disable_front_panel = False
 curr_compliance = 0.1  # A
 drain_curr_range = 0.01  # A
 settle_delay = 0
-drain_instr_wire_mode = 4
+drain_instr_wire_mode = 2
 gate_instr_wire_mode = 2
 
 rm = pyvisa.ResourceManager()
