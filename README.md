@@ -48,7 +48,7 @@ This library communicates with instruments via [NI-VISA](https://www.ni.com/en/s
 NI-VISA driver support on macOS can be limited or tricky. If you encounter issues, a reliable workaround is to use a Windows virtual machine:
 
 1. Install [VirtualBox](https://www.virtualbox.org/) (or any virtualization software).  
-2. Create a Windows VM.  
+2. Create a Windows VM. You will need a 64 bit iso, you can get [Windows 10 64 bit iso here](https://www.microsoft.com/en-us/software-download/windows10ISO)
 3. Within the VM, install:
    - Python and PyVISA  
    - NI-VISA and NI-488.2  
