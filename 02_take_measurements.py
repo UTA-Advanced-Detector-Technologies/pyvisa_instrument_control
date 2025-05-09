@@ -189,7 +189,8 @@ def configure_instr(sourcing_voltage,
                     current_range=0.1,
                     disable_front_panel=True,
                     curr_range_hard_set=False,
-                    voltage_range=20):
+                    voltage_range=20,
+                    non_SCPI_curr_range=8):
     try:
         if ascii_command_flavor == 'SCPI':
             instr.write('*RST')
@@ -221,7 +222,7 @@ def configure_instr(sourcing_voltage,
         elif ascii_command_flavor == 'non-SCPI':
             instr.write("F0,0X")
             instr.write(f'B{sourcing_voltage},0,0X')
-            instr.write(f"L{current_compliance},7X")
+            instr.write(f"L{current_compliance},{non_SCPI_curr_range}X")
             instr.write("P2X")
             instr.write("R1X")
             instr.write('H0X')
@@ -428,7 +429,7 @@ def voltage_sweep_three_instruments(
 #                                              MAIN MEASUREMENT SCRIPT
 # -----------------------------------------------------------------------------------------------------------------------
 
-data_folder = 'Data/roomtemp_initial_test'
+data_folder = 'Data/roomtemp_05-08-2025'
 bias_json_file = "sweep_bias_instructions_v3.json"
 live_plotting = True
 disable_front_panel = False
@@ -458,7 +459,8 @@ configure_instr(0,
                 wire_mode=drain_instr_wire_mode,
                 disable_front_panel=disable_front_panel,
                 curr_range_hard_set = False,
-                current_range = 0.5
+                current_range = 0.5,
+                non_SCPI_curr_range=9
                 )
 
 configure_instr(0,
@@ -466,10 +468,11 @@ configure_instr(0,
                 current_compliance=curr_compliance,
                 ascii_command_flavor='non-SCPI',
                 wire_mode=gate_instr_wire_mode,
-                disable_front_panel=disable_front_panel)
+                disable_front_panel=disable_front_panel,
+                non_SCPI_curr_range=1)
 
 
-transistor_key='nmos_FET_test1' #give it a name for the data saving folder. needs to have nmos or pmos in name
+transistor_key='nmos_FET_len_0.19_wid_7' #give it a name for the data saving folder. needs to have nmos or pmos in name
 
 
 print(f"\nConfiguring transistor: {transistor_key}")
@@ -555,69 +558,69 @@ for drain_source_voltage in drain_source_voltages_transfer_char:
     set_voltage(0, drain_source_instrum, ascii_command_flavor = 'non-SCPI') #letting transistor cool btwn measurements
     set_voltage(0, gate_source_instrum, ascii_command_flavor = 'non-SCPI')
     time.sleep(1)
-#
-# #################################### Output Characteristics #######################################
-# for gate_source_voltage in gate_source_voltages_output_char:
-#     output_char_data = voltage_sweep_three_instruments(
-#         fixed='Vg',
-#         variable='Vd',
-#         sweep_voltages=drain_source_voltages_output_char,
-#         fixed_voltage=gate_source_voltage,
-#         drain_source_instr=drain_source_instrum,
-#         gate_source_instr=gate_source_instrum,
-#         live_plot=live_plotting,
-#         curr_compliance=curr_compliance,
-#         drain_curr_range=drain_curr_range,
-#         settle_delay=settle_delay
-#     )
-#
-#     gate_source_voltage_str = str(gate_source_voltage).replace('.', 'p')
-#
-#     # Define the CSV file path
-#     csv_filename = f'idvd_Vg{gate_source_voltage_str}.csv'
-#     csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
-#
-#     # Ensure the directory exists
-#     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-#     # Extract relevant columns
-#     Vd_src = [row[0] for row in output_char_data]
-#     Vg_src = [row[1] for row in output_char_data]
-#     Id = [row[2] for row in output_char_data]
-#
-#     # Open the CSV file for writing
-#     with open(csv_path, 'w', newline='') as csvfile:
-#         writer = csv.writer(csvfile)
-#
-#         # Write the constant voltage section
-#         writer.writerow(['#Constant Voltage'])
-#         writer.writerow(['VG', Vg_src[0]])  # First value of Vd_src
-#         writer.writerow(['VS', '0'])  # VS set to 0
-#
-#         # Write the data header
-#         writer.writerow(['#Data'])
-#         writer.writerow(['VD', 'ID'])
-#
-#         # Write the data rows
-#         for vd, id_val in zip(Vd_src, Id):
-#             writer.writerow([vd, id_val])
-#
-#     # Saving 4 columns again
-#     np.savetxt(
-#         f'{data_folder}/{flavor}/{transistor_key}/idvd_Vg{gate_source_voltage_str}.csv',
-#         output_char_data,
-#         delimiter=',',
-#         header='Vd_src, Vg_src, Id, Ig',
-#         comments=''
-#     )
-#
-#
-#
-# #be sure all voltages are set to zero
-# set_voltage(0, gate_source_instrum, ascii_command_flavor = 'non-SCPI')
-# set_voltage(0, drain_source_instrum, ascii_command_flavor = 'non-SCPI')
-#
-# end_time = time.time()
-# elapsed_time = end_time - start_time
-# minutes = int(elapsed_time // 60)
-# seconds = elapsed_time % 60
-# print(f"Transistor Characterization completed in {minutes} minutes {seconds:.2f} seconds.")
+
+#################################### Output Characteristics #######################################
+for gate_source_voltage in gate_source_voltages_output_char:
+    output_char_data = voltage_sweep_three_instruments(
+        fixed='Vg',
+        variable='Vd',
+        sweep_voltages=drain_source_voltages_output_char,
+        fixed_voltage=gate_source_voltage,
+        drain_source_instr=drain_source_instrum,
+        gate_source_instr=gate_source_instrum,
+        live_plot=live_plotting,
+        curr_compliance=curr_compliance,
+        drain_curr_range=drain_curr_range,
+        settle_delay=settle_delay
+    )
+
+    gate_source_voltage_str = str(gate_source_voltage).replace('.', 'p')
+
+    # Define the CSV file path
+    csv_filename = f'idvd_Vg{gate_source_voltage_str}.csv'
+    csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+    # Extract relevant columns
+    Vd_src = [row[0] for row in output_char_data]
+    Vg_src = [row[1] for row in output_char_data]
+    Id = [row[2] for row in output_char_data]
+
+    # Open the CSV file for writing
+    with open(csv_path, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+
+        # Write the constant voltage section
+        writer.writerow(['#Constant Voltage'])
+        writer.writerow(['VG', Vg_src[0]])  # First value of Vd_src
+        writer.writerow(['VS', '0'])  # VS set to 0
+
+        # Write the data header
+        writer.writerow(['#Data'])
+        writer.writerow(['VD', 'ID'])
+
+        # Write the data rows
+        for vd, id_val in zip(Vd_src, Id):
+            writer.writerow([vd, id_val])
+
+    # Saving 4 columns again
+    np.savetxt(
+        f'{data_folder}/{flavor}/{transistor_key}/idvd_Vg{gate_source_voltage_str}.csv',
+        output_char_data,
+        delimiter=',',
+        header='Vd_src, Vg_src, Id, Ig',
+        comments=''
+    )
+
+
+
+#be sure all voltages are set to zero
+set_voltage(0, gate_source_instrum, ascii_command_flavor = 'non-SCPI')
+set_voltage(0, drain_source_instrum, ascii_command_flavor = 'non-SCPI')
+
+end_time = time.time()
+elapsed_time = end_time - start_time
+minutes = int(elapsed_time // 60)
+seconds = elapsed_time % 60
+print(f"Transistor Characterization completed in {minutes} minutes {seconds:.2f} seconds.")
