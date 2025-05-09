@@ -469,7 +469,7 @@ configure_instr(0,
                 ascii_command_flavor='non-SCPI',
                 wire_mode=gate_instr_wire_mode,
                 disable_front_panel=disable_front_panel,
-                non_SCPI_curr_range=1)
+                non_SCPI_curr_range=2)
 
 
 transistor_key='nmos_FET_len_0.19_wid_7' #give it a name for the data saving folder. needs to have nmos or pmos in name
