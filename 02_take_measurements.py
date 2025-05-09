@@ -233,7 +233,7 @@ def configure_instr(sourcing_voltage,
         print(e)
 
 
-def set_voltage(sourcing_voltage, instr, ascii_command_flavor='SCPI'):
+def set_voltage(sourcing_voltage, instr, ascii_command_flavor='SCPI', non_SCPI_voltage_range=0):
     try:
         if ascii_command_flavor == 'SCPI':
             instr.write(f':SOUR:VOLT {sourcing_voltage}')
@@ -302,6 +302,7 @@ def voltage_sweep_three_instruments(
         live_plot=True,
         drain_curr_range=0.01,
         settle_delay=0.05,
+        non_SCPI_voltage_range_drain=0
 ):
     """
     Sweeps the 'variable' voltage while holding the other nodes constant.
@@ -349,7 +350,7 @@ def voltage_sweep_three_instruments(
     time.sleep(0.5)
     # Set the "fixed" node:
     if fixed == 'Vd':
-        set_voltage(fixed_voltage, drain_source_instr, ascii_command_flavor='non-SCPI')
+        set_voltage(fixed_voltage, drain_source_instr, ascii_command_flavor='non-SCPI', non_SCPI_voltage_range=non_SCPI_voltage_range_drain)
     elif fixed == 'Vg':
         set_voltage(fixed_voltage, gate_source_instr, ascii_command_flavor='non-SCPI')
     else:
@@ -429,11 +430,11 @@ def voltage_sweep_three_instruments(
 #                                              MAIN MEASUREMENT SCRIPT
 # -----------------------------------------------------------------------------------------------------------------------
 
-data_folder = 'Data/coldish_newwires_05-09-2025'
+data_folder = 'Data/77K_bonding_diagram_1_05-09-2025'
 bias_json_file = "sweep_bias_instructions_v3.json"
 live_plotting = True
 disable_front_panel = False
-curr_compliance = 0.5  # A
+curr_compliance = 1  # A
 drain_curr_range = 0.5  # A
 settle_delay = 0
 drain_instr_wire_mode = 2
@@ -472,7 +473,7 @@ configure_instr(0,
                 non_SCPI_curr_range=10)
 
 
-transistor_key='nmos_FET_len_100_wid_100' #give it a name for the data saving folder. needs to have nmos or pmos in name
+transistor_key='nmos_FET_len_1_wid_3' #give it a name for the data saving folder. needs to have nmos or pmos in name
 
 
 print(f"\nConfiguring transistor: {transistor_key}")
@@ -506,21 +507,25 @@ os.makedirs(f'{data_folder}/{flavor}/{transistor_key}', exist_ok=True)
 
 ##################################   Transfer Char (Set 1)   #############################
 for drain_source_voltage in drain_source_voltages_transfer_char:
+    non_SCPI_voltage_range_drain = 0  # auto range
+    # if abs(drain_source_voltage) < 0.05:
+    #     continue
     if abs(drain_source_voltage) <0.05:
         configure_instr(0,
                         drain_source_instrum,
-                        current_compliance=curr_compliance,
+                        current_compliance=0.0005,
                         ascii_command_flavor='non-SCPI',
                         wire_mode=drain_instr_wire_mode,
                         disable_front_panel=disable_front_panel,
                         curr_range_hard_set=False,
                         current_range=0.5,
-                        non_SCPI_curr_range=6
+                        non_SCPI_curr_range=7
                         )
+
     else:
         configure_instr(0,
                         drain_source_instrum,
-                        current_compliance=curr_compliance,
+                        current_compliance=0.1,
                         ascii_command_flavor='non-SCPI',
                         wire_mode=drain_instr_wire_mode,
                         disable_front_panel=disable_front_panel,
@@ -539,7 +544,8 @@ for drain_source_voltage in drain_source_voltages_transfer_char:
         live_plot=live_plotting,
         curr_compliance=curr_compliance,
         drain_curr_range=drain_curr_range,
-        settle_delay=settle_delay
+        settle_delay=settle_delay,
+        non_SCPI_voltage_range_drain = non_SCPI_voltage_range_drain
     )
     drain_source_voltage_str = str(drain_source_voltage).replace('.', 'p')
 
