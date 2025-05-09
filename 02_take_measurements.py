@@ -506,6 +506,29 @@ os.makedirs(f'{data_folder}/{flavor}/{transistor_key}', exist_ok=True)
 
 ##################################   Transfer Char (Set 1)   #############################
 for drain_source_voltage in drain_source_voltages_transfer_char:
+    if abs(drain_source_voltage) <0.05:
+        configure_instr(0,
+                        drain_source_instrum,
+                        current_compliance=curr_compliance,
+                        ascii_command_flavor='non-SCPI',
+                        wire_mode=drain_instr_wire_mode,
+                        disable_front_panel=disable_front_panel,
+                        curr_range_hard_set=False,
+                        current_range=0.5,
+                        non_SCPI_curr_range=6
+                        )
+    else:
+        configure_instr(0,
+                        drain_source_instrum,
+                        current_compliance=curr_compliance,
+                        ascii_command_flavor='non-SCPI',
+                        wire_mode=drain_instr_wire_mode,
+                        disable_front_panel=disable_front_panel,
+                        curr_range_hard_set=False,
+                        current_range=0.5,
+                        non_SCPI_curr_range=9
+                        )
+
     transfer_char_data = voltage_sweep_three_instruments(
         fixed='Vd',
         variable='Vg',
