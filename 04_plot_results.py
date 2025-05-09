@@ -258,7 +258,7 @@ def plot_transfer_vb0(idvg_files, out_dir, label_for_title="Vsource=0"):
 ###############################################################################
 # Main plot function
 ###############################################################################
-transistor_key = 'nmos_FET_len_8_wid_100'
+transistor_key = 'pmos_FET_len_20_wid_100'
 
 base_out_dir = f'plot_all_biases/{flavor}/77K_bonding_diagram_1_05-09-2025/{transistor_key}'
 os.makedirs(base_out_dir, exist_ok=True)

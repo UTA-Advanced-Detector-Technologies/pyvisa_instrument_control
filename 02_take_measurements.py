@@ -473,7 +473,7 @@ configure_instr(0,
                 non_SCPI_curr_range=10)
 
 
-transistor_key='nmos_FET_len_1_wid_3' #give it a name for the data saving folder. needs to have nmos or pmos in name
+transistor_key='pmos_FET_len_20_wid_100' #give it a name for the data saving folder. needs to have nmos or pmos in name
 
 
 print(f"\nConfiguring transistor: {transistor_key}")
@@ -513,25 +513,25 @@ for drain_source_voltage in drain_source_voltages_transfer_char:
     if abs(drain_source_voltage) <0.05:
         configure_instr(0,
                         drain_source_instrum,
-                        current_compliance=0.0005,
+                        current_compliance=0.000005,
+                        ascii_command_flavor='non-SCPI',
+                        wire_mode=drain_instr_wire_mode,
+                        disable_front_panel=disable_front_panel,
+                        curr_range_hard_set=False,
+                        current_range=0.5,
+                        non_SCPI_curr_range=5
+                        )
+
+    else:
+        configure_instr(0,
+                        drain_source_instrum,
+                        current_compliance=0.001,
                         ascii_command_flavor='non-SCPI',
                         wire_mode=drain_instr_wire_mode,
                         disable_front_panel=disable_front_panel,
                         curr_range_hard_set=False,
                         current_range=0.5,
                         non_SCPI_curr_range=7
-                        )
-
-    else:
-        configure_instr(0,
-                        drain_source_instrum,
-                        current_compliance=0.1,
-                        ascii_command_flavor='non-SCPI',
-                        wire_mode=drain_instr_wire_mode,
-                        disable_front_panel=disable_front_panel,
-                        curr_range_hard_set=False,
-                        current_range=0.5,
-                        non_SCPI_curr_range=9
                         )
 
     transfer_char_data = voltage_sweep_three_instruments(
