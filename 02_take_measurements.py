@@ -429,7 +429,7 @@ def voltage_sweep_three_instruments(
 #                                              MAIN MEASUREMENT SCRIPT
 # -----------------------------------------------------------------------------------------------------------------------
 
-data_folder = 'Data/roomtemp_05-08-2025'
+data_folder = 'Data/coldish_newwires_05-09-2025'
 bias_json_file = "sweep_bias_instructions_v3.json"
 live_plotting = True
 disable_front_panel = False
@@ -460,7 +460,7 @@ configure_instr(0,
                 disable_front_panel=disable_front_panel,
                 curr_range_hard_set = False,
                 current_range = 0.5,
-                non_SCPI_curr_range=9
+                non_SCPI_curr_range=5
                 )
 
 configure_instr(0,
@@ -469,10 +469,10 @@ configure_instr(0,
                 ascii_command_flavor='non-SCPI',
                 wire_mode=gate_instr_wire_mode,
                 disable_front_panel=disable_front_panel,
-                non_SCPI_curr_range=2)
+                non_SCPI_curr_range=10)
 
 
-transistor_key='nmos_FET_len_0.19_wid_7' #give it a name for the data saving folder. needs to have nmos or pmos in name
+transistor_key='nmos_FET_len_100_wid_100' #give it a name for the data saving folder. needs to have nmos or pmos in name
 
 
 print(f"\nConfiguring transistor: {transistor_key}")
