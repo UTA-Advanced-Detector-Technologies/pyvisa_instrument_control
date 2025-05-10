@@ -213,8 +213,8 @@ def plot_transfer_vb0(idvg_files, out_dir, label_for_title="Vsource=0"):
         ax_drain_lin.scatter(df['Vg_src'], df['Id'], s=10, label=label_str)
         ax_gate_lin.scatter(df['Vg_src'], df['Ig'], s=10, label=label_str)
 
-        ax_drain_log.scatter(df['Vg_src'], abs(df['Id']), s=10, label=label_str)
-        ax_gate_log.scatter(df['Vg_src'], abs(df['Ig']), s=10, label=label_str)
+        ax_drain_log.scatter(abs(df['Vg_src']), abs(df['Id']), s=10, label=label_str)
+        ax_gate_log.scatter(abs(df['Vg_src']), abs(df['Ig']), s=10, label=label_str)
 
     ax_drain_lin.set_xlabel("V_gate_source (V)")
     ax_drain_lin.set_ylabel("Drain_Source I (A)")
@@ -237,6 +237,7 @@ def plot_transfer_vb0(idvg_files, out_dir, label_for_title="Vsource=0"):
     ax_drain_log.set_xlabel("V_gate_source (V)")
     ax_drain_log.set_ylabel("Drain_Source I (A) [log]")
     ax_drain_log.set_title(f"Transfer (Drain, log) {label_for_title}")
+    #ax_drain_log.set_ylim(0, 1e-6)
     ax_drain_log.set_yscale("log")
     ax_drain_log.legend()
     ax_drain_log.grid(True)
@@ -258,7 +259,7 @@ def plot_transfer_vb0(idvg_files, out_dir, label_for_title="Vsource=0"):
 ###############################################################################
 # Main plot function
 ###############################################################################
-transistor_key = 'pmos_FET_len_20_wid_100'
+transistor_key = 'pmos_FET_len_4_wid_7'
 
 base_out_dir = f'plot_all_biases/{flavor}/77K_bonding_diagram_1_05-09-2025/{transistor_key}'
 os.makedirs(base_out_dir, exist_ok=True)
@@ -277,7 +278,7 @@ idvg_files = [f for f in all_csv_files if 'idvg' in os.path.basename(f).lower()]
 idvd_files = [f for f in all_csv_files if 'idvd' in os.path.basename(f).lower()]
 
 vb0_out_dir = ensure_dir(os.path.join(base_out_dir, "Vs0"))
-plot_transfer_vb0(idvg_files, vb0_out_dir, label_for_title="@ 300K")
-plot_output_grouped_by_terminal(idvd_files, vb0_out_dir, label_for_title="@ 300K")
+plot_transfer_vb0(idvg_files, vb0_out_dir, label_for_title="@ 77K")
+plot_output_grouped_by_terminal(idvd_files, vb0_out_dir, label_for_title="@ 77K")
 
 print("Done generating plots.")
