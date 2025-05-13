@@ -202,6 +202,18 @@ def plot_transfer_vb0(idvg_files, out_dir, label_for_title="Vsource=0"):
     fig_gate_log, ax_gate_log = plt.subplots()
 
     for fpath in idvg_files:
+        if "range5" in fpath:
+            extra_label= ", Range 5 (10uA)"
+        elif "range6." in fpath:
+            extra_label= ", Range 6 (100uA)"
+        elif "range7" in fpath:
+            extra_label=", Range 7 (1mA)"
+        elif "range4" in fpath:
+            extra_label=", Range 4 (1uA)"
+        elif "range6(2)" in fpath:
+            extra_label=", Range 6 (100uA) (not changing range)"
+        else:
+            extra_label=""
         df = read_data(fpath)
         basename = os.path.basename(fpath)
         vd_match = vd_pattern.search(basename)
@@ -210,11 +222,11 @@ def plot_transfer_vb0(idvg_files, out_dir, label_for_title="Vsource=0"):
         vsub_str = vsub_match.group(1).replace('p', '.') if vsub_match else "?"
         label_str = f"Vd={vd_str} V"
 
-        ax_drain_lin.scatter(df['Vg_src'], df['Id'], s=10, label=label_str)
-        ax_gate_lin.scatter(df['Vg_src'], df['Ig'], s=10, label=label_str)
+        ax_drain_lin.scatter(df['Vg_src'], df['Id'], s=10, label=f"{label_str}{extra_label}")
+        ax_gate_lin.scatter(df['Vg_src'], df['Ig'], s=10, label=f"{label_str}{extra_label}")
 
-        ax_drain_log.scatter(abs(df['Vg_src']), abs(df['Id']), s=10, label=label_str)
-        ax_gate_log.scatter(abs(df['Vg_src']), abs(df['Ig']), s=10, label=label_str)
+        ax_drain_log.scatter(abs(df['Vg_src']), abs(df['Id']), s=10, label=f"{label_str}{extra_label}")
+        ax_gate_log.scatter(abs(df['Vg_src']), abs(df['Ig']), s=10, label=f"{label_str}{extra_label}")
 
     ax_drain_lin.set_xlabel("V_gate_source (V)")
     ax_drain_lin.set_ylabel("Drain_Source I (A)")
@@ -259,9 +271,9 @@ def plot_transfer_vb0(idvg_files, out_dir, label_for_title="Vsource=0"):
 ###############################################################################
 # Main plot function
 ###############################################################################
-transistor_key = 'pmos_FET_len_4_wid_7'
+transistor_key = 'nmos_FET_len_8_wid_1.6'
 
-base_out_dir = f'plot_all_biases/{flavor}/77K_bonding_diagram_1_05-09-2025/{transistor_key}'
+base_out_dir = f'plot_all_biases/{flavor}/77K_bonding_diagram_2_05-13-2025/{transistor_key}'
 os.makedirs(base_out_dir, exist_ok=True)
 
 transistor_key_lower = transistor_key.lower()
@@ -272,13 +284,13 @@ elif "pfet" in transistor_key_lower or "pmos" in transistor_key_lower:
 else:
     transistor_type = "pfet"
 
-all_csv_files = glob.glob(f"{data_folder}/77K_bonding_diagram_1_05-09-2025/{flavor}/{transistor_key}/*.csv")
+all_csv_files = glob.glob(f"{data_folder}/77K_bonding_diagram_2_05-13-2025/{flavor}/{transistor_key}/*.csv")
 
 idvg_files = [f for f in all_csv_files if 'idvg' in os.path.basename(f).lower()]
 idvd_files = [f for f in all_csv_files if 'idvd' in os.path.basename(f).lower()]
 
 vb0_out_dir = ensure_dir(os.path.join(base_out_dir, "Vs0"))
-plot_transfer_vb0(idvg_files, vb0_out_dir, label_for_title="@ 77K")
-plot_output_grouped_by_terminal(idvd_files, vb0_out_dir, label_for_title="@ 77K")
+plot_transfer_vb0(idvg_files, vb0_out_dir, label_for_title=f"{transistor_key} @ 300K")
+plot_output_grouped_by_terminal(idvd_files, vb0_out_dir, label_for_title=f"{transistor_key} @ 300K")
 
 print("Done generating plots.")
