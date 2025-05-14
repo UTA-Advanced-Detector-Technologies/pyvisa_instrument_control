@@ -432,6 +432,10 @@ def voltage_sweep_three_instruments(
                             current_range=0.5,
                             non_SCPI_curr_range=non_SCPI_curr_range)
             time.sleep(30)
+            # Measure currents and voltages once to get rid of small spike from data after ranging :
+            blah, blah2 = measure_iv(drain_source_instr, ascii_command_flavor='non-SCPI')
+            blahh, blahh2 = measure_iv(gate_source_instr, ascii_command_flavor='non-SCPI')
+
 
     time.sleep(0.5) #if you go to fast the older smus give an out of range error, so just keep this in there
 
