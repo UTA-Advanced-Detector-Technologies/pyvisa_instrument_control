@@ -492,7 +492,7 @@ configure_instr(0,
                 disable_front_panel=disable_front_panel,
                 non_SCPI_curr_range=10)
 
-transistor_key='pmos_FET_len_0p5_wid_0p42_range_test'# a name for the data saving folder. needs to have nmos or pmos in name
+transistor_key='pmos_FET_len_8_wid_7_range_test'# a name for the data saving folder. needs to have nmos or pmos in name
 
 
 print(f"\nConfiguring transistor: {transistor_key}")
