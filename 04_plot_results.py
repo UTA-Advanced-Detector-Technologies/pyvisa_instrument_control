@@ -271,9 +271,9 @@ def plot_transfer_vb0(idvg_files, out_dir, label_for_title="Vsource=0"):
 ###############################################################################
 # Main plot function
 ###############################################################################
-transistor_key = 'pmos_FET_len_20_wid_1'
+transistor_key = 'pmos_FET_len_8_wid_1.6'
 
-base_out_dir = f'plot_all_biases/{flavor}/77K_bonding_diagram_2_05-14-2025/{transistor_key}'
+base_out_dir = f'plot_all_biases/{flavor}/160K_bonding_diagram_1_05-20-2025/{transistor_key}'
 os.makedirs(base_out_dir, exist_ok=True)
 
 transistor_key_lower = transistor_key.lower()
@@ -284,13 +284,13 @@ elif "pfet" in transistor_key_lower or "pmos" in transistor_key_lower:
 else:
     transistor_type = "pfet"
 
-all_csv_files = glob.glob(f"{data_folder}/77K_bonding_diagram_2_05-14-2025/{flavor}/{transistor_key}/*.csv")
+all_csv_files = glob.glob(f"{data_folder}/160K_bonding_diagram_1_05-20-2025/{flavor}/{transistor_key}/*.csv")
 
 idvg_files = [f for f in all_csv_files if 'idvg' in os.path.basename(f).lower()]
 idvd_files = [f for f in all_csv_files if 'idvd' in os.path.basename(f).lower()]
 
 vb0_out_dir = ensure_dir(os.path.join(base_out_dir, "Vs0"))
-plot_transfer_vb0(idvg_files, vb0_out_dir, label_for_title=f"{transistor_key} @ 77K")
-plot_output_grouped_by_terminal(idvd_files, vb0_out_dir, label_for_title=f"{transistor_key} @ 77K")
+plot_transfer_vb0(idvg_files, vb0_out_dir, label_for_title=f"{transistor_key} @ 160K")
+plot_output_grouped_by_terminal(idvd_files, vb0_out_dir, label_for_title=f"{transistor_key} @ 160K")
 
 print("Done generating plots.")

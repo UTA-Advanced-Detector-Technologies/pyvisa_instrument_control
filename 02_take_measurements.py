@@ -305,8 +305,8 @@ def voltage_sweep_three_instruments(
         live_plot=True,
         drain_curr_range=0.01,
         settle_delay=0.05,
-        non_SCPI_voltage_range_drain=0,
-        non_SCPI_curr_range=5
+        non_SCPI_curr_range=5,
+        manual_ranging=True
 ):
     """
     Sweeps the 'variable' voltage while holding the other nodes constant.
@@ -354,7 +354,7 @@ def voltage_sweep_three_instruments(
     time.sleep(0.5)
     # Set the "fixed" node:
     if fixed == 'Vd':
-        set_voltage(fixed_voltage, drain_source_instr, ascii_command_flavor='non-SCPI', non_SCPI_voltage_range=non_SCPI_voltage_range_drain)
+        set_voltage(fixed_voltage, drain_source_instr, ascii_command_flavor='non-SCPI')
     elif fixed == 'Vg':
         set_voltage(fixed_voltage, gate_source_instr, ascii_command_flavor='non-SCPI')
     else:
@@ -417,24 +417,24 @@ def voltage_sweep_three_instruments(
 
             fig_all.canvas.draw()
             fig_all.canvas.flush_events()
-
-        if abs(d_i) >= (curr_compliance*.90): #if drain current is 90% of current compliance
-            curr_compliance = curr_compliance * 10
-            non_SCPI_curr_range = non_SCPI_curr_range + 1
-            print(f"Changing current compliance to {curr_compliance} and range to {non_SCPI_curr_range}")
-            configure_instr(v_value,
-                            drain_source_instr,
-                            current_compliance=curr_compliance,
-                            ascii_command_flavor='non-SCPI',
-                            wire_mode=drain_instr_wire_mode,
-                            disable_front_panel=disable_front_panel,
-                            curr_range_hard_set=False,
-                            current_range=0.5,
-                            non_SCPI_curr_range=non_SCPI_curr_range)
-            time.sleep(30)
-            # Measure currents and voltages once to get rid of small spike from data after ranging :
-            blah, blah2 = measure_iv(drain_source_instr, ascii_command_flavor='non-SCPI')
-            blahh, blahh2 = measure_iv(gate_source_instr, ascii_command_flavor='non-SCPI')
+        if manual_ranging:
+            if abs(d_i) >= (curr_compliance*.90): #if drain current is 90% of current compliance
+                curr_compliance = curr_compliance * 10
+                non_SCPI_curr_range = non_SCPI_curr_range + 1
+                print(f"Changing current compliance to {curr_compliance} and range to {non_SCPI_curr_range}")
+                configure_instr(v_value,
+                                drain_source_instr,
+                                current_compliance=curr_compliance,
+                                ascii_command_flavor='non-SCPI',
+                                wire_mode=drain_instr_wire_mode,
+                                disable_front_panel=disable_front_panel,
+                                curr_range_hard_set=False,
+                                current_range=0.5,
+                                non_SCPI_curr_range=non_SCPI_curr_range)
+                time.sleep(30)
+                # horrendous hack--lets measure currents and voltages once to get rid of small spike from data after ranging:
+                blah, blah2 = measure_iv(drain_source_instr, ascii_command_flavor='non-SCPI')
+                blahh, blahh2 = measure_iv(gate_source_instr, ascii_command_flavor='non-SCPI')
 
 
     time.sleep(0.5) #if you go to fast the older smus give an out of range error, so just keep this in there
@@ -453,12 +453,12 @@ def voltage_sweep_three_instruments(
 #                                              MAIN MEASUREMENT SCRIPT
 # -----------------------------------------------------------------------------------------------------------------------
 
-data_folder = 'Data/77K_bonding_diagram_2_05-14-2025'
+data_folder = 'Data/160K_bonding_diagram_1_05-20-2025'
 bias_json_file = "sweep_bias_instructions_v3.json"
 live_plotting = True
 disable_front_panel = False
-curr_compliance = 0.000001  # A
-non_SCPI_curr_range = 4
+curr_compliance = 1e-5  # A
+non_SCPI_curr_range = 5
 drain_curr_range = 0.5  # A
 settle_delay = 0
 drain_instr_wire_mode = 2
@@ -496,7 +496,7 @@ configure_instr(0,
                 disable_front_panel=disable_front_panel,
                 non_SCPI_curr_range=10)
 
-transistor_key='pmos_FET_len_8_wid_7_range_test'# a name for the data saving folder. needs to have nmos or pmos in name
+transistor_key='pmos_FET_len_8_wid_0.84'# a name for the data saving folder. needs to have nmos or pmos in name
 
 
 print(f"\nConfiguring transistor: {transistor_key}")
@@ -528,157 +528,34 @@ gate_source_voltages_output_char = bias_instructions[1][1][flavor_index]
 start_time = time.time()
 os.makedirs(f'{data_folder}/{flavor}/{transistor_key}', exist_ok=True)
 
-#################################   Transfer Char (Set 1)   #############################
-for drain_source_voltage in drain_source_voltages_transfer_char:
-    non_SCPI_voltage_range_drain = 0  # auto range
-    if abs(drain_source_voltage) < 0.05:
-        continue
-    # if abs(drain_source_voltage) <0.05:   #lowdrain bias
-    #     configure_instr(0,
-    #                     drain_source_instrum,
-    #                     current_compliance=0.000001,
-    #                     ascii_command_flavor='non-SCPI',
-    #                     wire_mode=drain_instr_wire_mode,
-    #                     disable_front_panel=disable_front_panel,
-    #                     curr_range_hard_set=False,
-    #                     current_range=0.5,
-    #                     non_SCPI_curr_range=4
-    #                     )
-    #
-    # elif abs(drain_source_voltage) <0.7:                                    #high drain bias
-    #     configure_instr(0,
-    #                     drain_source_instrum,
-    #                     current_compliance=0.0001,
-    #                     ascii_command_flavor='non-SCPI',
-    #                     wire_mode=drain_instr_wire_mode,
-    #                     disable_front_panel=disable_front_panel,
-    #                     curr_range_hard_set=False,
-    #                     current_range=0.5,
-    #                     non_SCPI_curr_range=6
-    #                     )
-    # elif abs(drain_source_voltage) <1.5:                                    #high drain bias
-    #     configure_instr(0,
-    #                     drain_source_instrum,
-    #                     current_compliance=0.0001,
-    #                     ascii_command_flavor='non-SCPI',
-    #                     wire_mode=drain_instr_wire_mode,
-    #                     disable_front_panel=disable_front_panel,
-    #                     curr_range_hard_set=False,
-    #                     current_range=0.5,
-    #                     non_SCPI_curr_range=6
-    #                     )
-    # else:                                   #high drain bias
-    #         configure_instr(0,
-    #                         drain_source_instrum,
-    #                         current_compliance=0.0001,
-    #                         ascii_command_flavor='non-SCPI',
-    #                         wire_mode=drain_instr_wire_mode,
-    #                         disable_front_panel=disable_front_panel,
-    #                         curr_range_hard_set=False,
-    #                         current_range=0.5,
-    #                         non_SCPI_curr_range=6
-    #                         )
-    transfer_char_data = voltage_sweep_three_instruments(
-        fixed='Vd',
-        variable='Vg',
-        sweep_voltages=gate_source_voltages_transfer_char,
-        fixed_voltage=drain_source_voltage,
-        drain_source_instr=drain_source_instrum,
-        gate_source_instr=gate_source_instrum,
-        live_plot=live_plotting,
-        curr_compliance=curr_compliance,
-        drain_curr_range=drain_curr_range,
-        settle_delay=settle_delay,
-        non_SCPI_voltage_range_drain = non_SCPI_voltage_range_drain,
-        non_SCPI_curr_range = non_SCPI_curr_range
-    )
-    drain_source_voltage_str = str(drain_source_voltage).replace('.', 'p')
-
-    # Define the CSV file path
-    csv_filename = f'idvg_Vd{drain_source_voltage_str}.csv'
-    csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
-
-    # Ensure the directory exists
-    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
-    # Extract relevant columns
-    Vd_src = [row[0] for row in transfer_char_data]
-    Vg_src = [row[1] for row in transfer_char_data]
-    Id = [row[2] for row in transfer_char_data]
-
-    # Open the CSV file for writing
-    with open(csv_path, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-
-        # Write the constant voltage section
-        writer.writerow(['#Constant Voltage'])
-        writer.writerow(['VD', Vd_src[0]])  # First value of Vd_src
-        writer.writerow(['VS', '0'])  # VS set to 0
-
-        # Write the data header
-        writer.writerow(['#Data'])
-        writer.writerow(['VG', 'ID'])
-
-        # Write the data rows
-        for vg, id_val in zip(Vg_src, Id):
-            writer.writerow([vg, id_val])
-
-    np.savetxt(
-        f'{data_folder}/{flavor}/{transistor_key}/idvg_Vd{drain_source_voltage_str}.csv',
-        transfer_char_data,
-        delimiter=',',
-        header='Vd_src, Vg_src, Id, Ig',
-        comments=''
-    )
-    set_voltage(0, drain_source_instrum, ascii_command_flavor = 'non-SCPI') #letting transistor cool btwn measurements
-    set_voltage(0, gate_source_instrum, ascii_command_flavor = 'non-SCPI')
-    time.sleep(1)
-
-# ############################## Output Characteristics #######################################
-# for gate_source_voltage in gate_source_voltages_output_char:
-#     non_SCPI_voltage_range_drain = 0  # auto range
-#     # if abs(gate_source_voltage) < 0.4:
-#     #     continue
-#     if abs(gate_source_voltage)<0.5:
-#         configure_instr(0,
-#                         drain_source_instrum,
-#                         current_compliance=0.00001,
-#                         ascii_command_flavor='non-SCPI',
-#                         wire_mode=drain_instr_wire_mode,
-#                         disable_front_panel=disable_front_panel,
-#                         curr_range_hard_set=False,
-#                         current_range=0.5,
-#                         non_SCPI_curr_range=5
-#                         )
+# ##############################   Transfer Char (Set 1)   #############################
+# configure_instr(0,
+#                 gate_source_instrum,
+#                 current_compliance=0.1,
+#                 ascii_command_flavor='non-SCPI',
+#                 wire_mode=drain_instr_wire_mode,
+#                 disable_front_panel=disable_front_panel,
+#                 curr_range_hard_set = False,
+#                 current_range = 0.5,
+#                 non_SCPI_curr_range=9
+#                 )
 #
-#     elif abs(gate_source_voltage) <0.8:
-#         configure_instr(0,
-#                         drain_source_instrum,
-#                         current_compliance=0.00001,
-#                         ascii_command_flavor='non-SCPI',
-#                         wire_mode=drain_instr_wire_mode,
-#                         disable_front_panel=disable_front_panel,
-#                         curr_range_hard_set=False,
-#                         current_range=0.5,
-#                         non_SCPI_curr_range=5
-#                         )
-#
-#     else:
-#         configure_instr(0,
-#                   drain_source_instrum,
-#                   current_compliance=0.0001,
-#                   ascii_command_flavor='non-SCPI',
-#                   wire_mode=drain_instr_wire_mode,
-#                   disable_front_panel=disable_front_panel,
-#                   curr_range_hard_set=False,
-#                   current_range=0.5,
-#                   non_SCPI_curr_range=6
-#                   )
-#
-#
-#
-#
-#
-#
+# for drain_source_voltage in drain_source_voltages_transfer_char:
+#     transfer_char_data = voltage_sweep_three_instruments(
+#         fixed='Vd',
+#         variable='Vg',
+#         sweep_voltages=gate_source_voltages_transfer_char,
+#         fixed_voltage=drain_source_voltage,
+#         drain_source_instr=drain_source_instrum,
+#         gate_source_instr=gate_source_instrum,
+#         live_plot=live_plotting,
+#         curr_compliance=curr_compliance,
+#         drain_curr_range=drain_curr_range,
+#         settle_delay=settle_delay,
+#         non_SCPI_curr_range = non_SCPI_curr_range,
+#         manual_ranging=True
+#     )
+#     '''for gate_source_voltage in gate_source_voltages_output_char:
 #     output_char_data = voltage_sweep_three_instruments(
 #         fixed='Vg',
 #         variable='Vd',
@@ -690,21 +567,21 @@ for drain_source_voltage in drain_source_voltages_transfer_char:
 #         curr_compliance=curr_compliance,
 #         drain_curr_range=drain_curr_range,
 #         settle_delay=settle_delay,
-#         non_SCPI_curr_range=non_SCPI_curr_range
-#     )
-#
-#     gate_source_voltage_str = str(gate_source_voltage).replace('.', 'p')
+#         non_SCPI_curr_range=non_SCPI_curr_range,
+#         manual_ranging=False
+#     )'''
+#     drain_source_voltage_str = str(drain_source_voltage).replace('.', 'p')
 #
 #     # Define the CSV file path
-#     csv_filename = f'idvd_Vg{gate_source_voltage_str}.csv'
+#     csv_filename = f'idvg_Vd{drain_source_voltage_str}.csv'
 #     csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
 #
 #     # Ensure the directory exists
 #     os.makedirs(os.path.dirname(csv_path), exist_ok=True)
 #     # Extract relevant columns
-#     Vd_src = [row[0] for row in output_char_data]
-#     Vg_src = [row[1] for row in output_char_data]
-#     Id = [row[2] for row in output_char_data]
+#     Vd_src = [row[0] for row in transfer_char_data]
+#     Vg_src = [row[1] for row in transfer_char_data]
+#     Id = [row[2] for row in transfer_char_data]
 #
 #     # Open the CSV file for writing
 #     with open(csv_path, 'w', newline='') as csvfile:
@@ -712,25 +589,93 @@ for drain_source_voltage in drain_source_voltages_transfer_char:
 #
 #         # Write the constant voltage section
 #         writer.writerow(['#Constant Voltage'])
-#         writer.writerow(['VG', Vg_src[0]])  # First value of Vd_src
+#         writer.writerow(['VD', Vd_src[0]])  # First value of Vd_src
 #         writer.writerow(['VS', '0'])  # VS set to 0
 #
 #         # Write the data header
 #         writer.writerow(['#Data'])
-#         writer.writerow(['VD', 'ID'])
+#         writer.writerow(['VG', 'ID'])
 #
 #         # Write the data rows
-#         for vd, id_val in zip(Vd_src, Id):
-#             writer.writerow([vd, id_val])
+#         for vg, id_val in zip(Vg_src, Id):
+#             writer.writerow([vg, id_val])
 #
-#     # Saving 4 columns again
 #     np.savetxt(
-#         f'{data_folder}/{flavor}/{transistor_key}/idvd_Vg{gate_source_voltage_str}.csv',
-#         output_char_data,
+#         f'{data_folder}/{flavor}/{transistor_key}/idvg_Vd{drain_source_voltage_str}.csv',
+#         transfer_char_data,
 #         delimiter=',',
 #         header='Vd_src, Vg_src, Id, Ig',
 #         comments=''
 #     )
+#     set_voltage(0, drain_source_instrum, ascii_command_flavor = 'non-SCPI') #letting transistor cool btwn measurements
+#     set_voltage(0, gate_source_instrum, ascii_command_flavor = 'non-SCPI')
+#     time.sleep(1)
+
+############################## Output Characteristics #######################################
+configure_instr(0,
+                drain_source_instrum,
+                current_compliance=0.001,
+                ascii_command_flavor='non-SCPI',
+                wire_mode=drain_instr_wire_mode,
+                disable_front_panel=disable_front_panel,
+                curr_range_hard_set = False,
+                current_range = 0.5,
+                non_SCPI_curr_range=7
+                ) #reconfigure to a big range for output characteristics, incase its a small range from transfers still
+for gate_source_voltage in gate_source_voltages_output_char:
+    output_char_data = voltage_sweep_three_instruments(
+        fixed='Vg',
+        variable='Vd',
+        sweep_voltages=drain_source_voltages_output_char,
+        fixed_voltage=gate_source_voltage,
+        drain_source_instr=drain_source_instrum,
+        gate_source_instr=gate_source_instrum,
+        live_plot=live_plotting,
+        curr_compliance=curr_compliance,
+        drain_curr_range=drain_curr_range,
+        settle_delay=settle_delay,
+        non_SCPI_curr_range=non_SCPI_curr_range,
+        manual_ranging=False
+    )
+
+    gate_source_voltage_str = str(gate_source_voltage).replace('.', 'p')
+
+    # Define the CSV file path
+    csv_filename = f'idvd_Vg{gate_source_voltage_str}.csv'
+    csv_path = os.path.join(data_folder, flavor, transistor_key, 'mystic_format', csv_filename)
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+    # Extract relevant columns
+    Vd_src = [row[0] for row in output_char_data]
+    Vg_src = [row[1] for row in output_char_data]
+    Id = [row[2] for row in output_char_data]
+
+    # Open the CSV file for writing
+    with open(csv_path, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+
+        # Write the constant voltage section
+        writer.writerow(['#Constant Voltage'])
+        writer.writerow(['VG', Vg_src[0]])  # First value of Vd_src
+        writer.writerow(['VS', '0'])  # VS set to 0
+
+        # Write the data header
+        writer.writerow(['#Data'])
+        writer.writerow(['VD', 'ID'])
+
+        # Write the data rows
+        for vd, id_val in zip(Vd_src, Id):
+            writer.writerow([vd, id_val])
+
+    # Saving 4 columns again
+    np.savetxt(
+        f'{data_folder}/{flavor}/{transistor_key}/idvd_Vg{gate_source_voltage_str}.csv',
+        output_char_data,
+        delimiter=',',
+        header='Vd_src, Vg_src, Id, Ig',
+        comments=''
+    )
 
 
 
